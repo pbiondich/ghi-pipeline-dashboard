@@ -46,7 +46,7 @@ async def dashboard(request: Request):
     proposals = _get_proposals()
     groups = group_by_status(proposals)
     total_active = sum(len(groups[s]) for s in ACTIVE_STATUSES)
-    total_archived = len(groups["rejected"])
+    total_archived = sum(len(groups[s]) for s in ["no-go", "rejected"])
     return templates.TemplateResponse(
         request,
         "dashboard.html",

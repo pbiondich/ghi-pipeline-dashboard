@@ -47,15 +47,16 @@
             <span class="header-count">{{ total_archived }} proposal{{ 's' if total_archived != 1 }}</span>
         </div>
         <div class="archive-grid">
-            {% set rejected_proposals = groups['rejected'] %}
-            {% if rejected_proposals %}
+            {% for status in ['no-go', 'rejected'] %}
+            {% set proposals = groups[status] %}
+            {% if proposals %}
             <div class="archive-group">
                 <div class="archive-group-header">
-                    <span>{{ STATUS_EMOJI['rejected'] }}</span>
-                    <h3>{{ STATUS_LABELS['rejected'] }}</h3>
-                    <span class="column-count">{{ rejected_proposals|length }}</span>
+                    <span>{{ STATUS_EMOJI[status] }}</span>
+                    <h3>{{ STATUS_LABELS[status] }}</h3>
+                    <span class="column-count">{{ proposals|length }}</span>
                 </div>
-                {% for p in rejected_proposals %}
+                {% for p in proposals %}
                 <div class="archive-card">
                     <div class="card-header">
                         <h3 class="card-title">{{ p.name }}</h3>
@@ -64,6 +65,9 @@
                         {% endif %}
                     </div>
                     <div class="card-funder">{{ p.funder }}</div>
+                    {% if p.status == 'no-go' and p.no_go_reason %}
+                    <div class="card-reason">{{ p.no_go_reason }}</div>
+                    {% endif %}
                     <div class="card-meta">
                         <span class="meta-item amount">{{ p.amount_display }}</span>
                         {% if p.updated %}
@@ -74,6 +78,7 @@
                 {% endfor %}
             </div>
             {% endif %}
+            {% endfor %}
         </div>
     </div>
 
@@ -251,15 +256,16 @@
 
     // Toggle archive section (class-based)
     function toggleArchive() {
-        const section = document.getElementById('archiveSection');
-        const btn = document.getElementById('archiveBtn');
-        const isHidden = section.classList.contains('archive-hidden');
-        if (isHidden) {
+        var section = document.getElementById('archiveSection');
+        var btn = document.getElementById('archiveBtn');
+        if (!section || !btn) return;
+        if (section.classList.contains('archive-hidden')) {
             section.classList.remove('archive-hidden');
             btn.textContent = 'Hide closed';
         } else {
             section.classList.add('archive-hidden');
-            btn.textContent = 'Show closed (' + document.querySelectorAll('.archive-card').length + ')';
+            var count = document.querySelectorAll('.archive-card').length;
+            btn.textContent = 'Show closed (' + count + ')';
         }
     }
 
