@@ -14,7 +14,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from .proposal_loader import load_proposals, get_proposal_by_slug, group_by_status, STATUS_ORDER, STATUS_LABELS, STATUS_EMOJI
+from .proposal_loader import load_proposals, get_proposal_by_slug, group_by_status, update_proposal_status, STATUS_ORDER, STATUS_LABELS, STATUS_EMOJI
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -73,6 +73,26 @@ async def api_proposal_detail(slug: str):
     if not p:
         raise HTTPException(status_code=404, detail="Proposal not found")
     return p.to_dict()
+
+
+@app.patch("/api/proposals/{slug}")
+async def api_update_proposal(slug: str, body: dict):
+    """Update a proposal field (e.g., status) and write back to the brain file."""
+    if "status" not in body:
+        raise HTTPException(status_code=400, detail="Request body must include 'status' field")
+    
+    new_status = body["status"]
+    
+    try:
+        updated = update_proposal_status(PROPOSALS_DIR, slug, new_status)
+        return updated.to_dict()
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except RuntimeError as e:
+        logger.error("Failed to update proposal %s: %s", slug, e)
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/proposal/{slug}", response_class=HTMLResponse)

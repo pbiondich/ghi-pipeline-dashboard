@@ -241,13 +241,61 @@ def load_proposals(proposals_dir: str) -> list[Proposal]:
 def get_proposal_by_slug(proposals: list[Proposal], slug: str) -> Optional[Proposal]:
     """Find a proposal by its slug. Handles both bare slugs and prefixed forms."""
     for p in proposals:
-        # Compare against stored slug (may be 'proposals/proposal-xyz' or just 'proposal-xyz')
         stored = p.slug
-        # Also compare against just the filename stem
         fname = p.filename.replace(".md", "")
         if stored == slug or stored.endswith("/" + slug) or fname == slug:
             return p
     return None
+
+
+def update_proposal_status(proposals_dir: str, slug: str, new_status: str) -> Proposal:
+    """Update the status frontmatter field in a proposal markdown file.
+    
+    Returns the updated Proposal object. Raises ValueError on invalid status.
+    """
+    if new_status not in STATUS_ORDER:
+        valid = ", ".join(STATUS_ORDER)
+        raise ValueError(f"Invalid status '{new_status}'. Must be one of: {valid}")
+    
+    # Find the file by slug
+    proposals_dir = Path(proposals_dir)
+    # Try direct filename
+    filepath = proposals_dir / f"{slug}.md"
+    if not filepath.exists():
+        # Try with proposal- prefix
+        filepath = proposals_dir / f"proposal-{slug}.md"
+    if not filepath.exists():
+        # Try finding by slug match in all proposal files
+        for f in proposals_dir.glob("proposal-*.md"):
+            try:
+                with open(f) as fh:
+                    post = frontmatter.load(fh)
+                stored = str(post.get("slug", ""))
+                if stored == slug or stored.endswith("/" + slug) or f.name.replace(".md", "") == slug:
+                    filepath = f
+                    break
+            except Exception:
+                continue
+    
+    if not filepath.exists():
+        raise FileNotFoundError(f"No proposal found for slug: {slug}")
+    
+    # Read, modify, write
+    try:
+        with open(filepath) as f:
+            post = frontmatter.load(f)
+        
+        post.metadata["status"] = new_status
+        post.metadata["updated"] = date.today().isoformat()
+        
+        content = frontmatter.dumps(post)
+        with open(filepath, "w") as f:
+            f.write(content)
+    except Exception as e:
+        raise RuntimeError(f"Failed to update proposal {filepath.name}: {e}")
+    
+    # Return updated Proposal object
+    return Proposal(post.metadata, post.content, str(filepath), filepath.name)
 
 
 def group_by_status(proposals: list[Proposal]) -> dict:

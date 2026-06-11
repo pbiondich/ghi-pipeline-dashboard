@@ -23,8 +23,7 @@
     <main class="pipeline">
         {% for status in STATUS_ORDER %}
         {% set proposals = groups[status] %}
-        {% if proposals %}
-        <section class="column" data-status="{{ status }}">
+        <section class="column{% if proposals|length == 0 %} column-empty{% endif %}" data-status="{{ status }}" ondragover="onDragOver(event)" ondrop="onDrop(event)">
             <div class="column-header">
                 <span class="column-emoji">{{ STATUS_EMOJI[status] }}</span>
                 <h2 class="column-title">{{ STATUS_LABELS[status] }}</h2>
@@ -32,7 +31,7 @@
             </div>
             <div class="column-cards">
                 {% for p in proposals %}
-                <a href="/proposal/{{ p.url_slug }}" class="card" data-fit="{{ p.fit_rating }}" data-deadline="{{ p.deadline_status }}">
+                <a href="/proposal/{{ p.url_slug }}" class="card" draggable="true" data-slug="{{ p.url_slug }}" data-status="{{ p.status }}" data-fit="{{ p.fit_rating }}" data-deadline="{{ p.deadline_status }}" ondragstart="onDragStart(event)">
                     <div class="card-header">
                         <h3 class="card-title">{{ p.name }}</h3>
                         {% if p.fit_rating %}
@@ -66,12 +65,116 @@
                 {% endfor %}
             </div>
         </section>
-        {% endif %}
         {% endfor %}
     </main>
 
     <footer class="footer">
-        <p>GHI Grant Pipeline · Regenstrief Institute · Data sourced from <code>~/brain/proposals/</code></p>
+        <p>GHI Grant Pipeline · Regenstrief Institute · Drag cards between columns to change status</p>
     </footer>
+
+    <script>
+    // Drag-and-drop state
+    let draggedCard = null;
+
+    function onDragStart(event) {
+        draggedCard = event.target.closest('.card');
+        if (!draggedCard) return;
+        event.dataTransfer.effectAllowed = 'move';
+        event.dataTransfer.setData('text/plain', draggedCard.dataset.slug);
+        draggedCard.classList.add('dragging');
+    }
+
+    function onDragOver(event) {
+        event.preventDefault();
+        event.dataTransfer.dropEffect = 'move';
+        // Highlight the target column
+        const column = event.target.closest('.column');
+        if (column) {
+            document.querySelectorAll('.column.drag-over').forEach(c => c.classList.remove('drag-over'));
+            column.classList.add('drag-over');
+        }
+    }
+
+    function onDrop(event) {
+        event.preventDefault();
+        // Clear highlights
+        document.querySelectorAll('.column.drag-over, .card.dragging').forEach(el => {
+            el.classList.remove('drag-over', 'dragging');
+        });
+
+        const column = event.target.closest('.column');
+        if (!column || !draggedCard) return;
+
+        const newStatus = column.dataset.status;
+        const oldStatus = draggedCard.dataset.status;
+        const slug = draggedCard.dataset.slug;
+
+        // No-op if same column
+        if (newStatus === oldStatus) return;
+
+        // Optimistic UI update: move the card
+        const targetCards = column.querySelector('.column-cards');
+        targetCards.appendChild(draggedCard);
+        draggedCard.dataset.status = newStatus;
+
+        // Update column counts
+        updateColumnCounts();
+
+        // Fire PATCH request
+        fetch(`/api/proposals/${slug}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: newStatus })
+        })
+        .then(response => {
+            if (!response.ok) {
+                // Revert on failure
+                console.error('Failed to update status:', response.statusText);
+                moveCardBack(draggedCard, oldStatus, newStatus);
+            }
+        })
+        .catch(err => {
+            console.error('Network error:', err);
+            moveCardBack(draggedCard, oldStatus, newStatus);
+        });
+
+        draggedCard = null;
+    }
+
+    function moveCardBack(card, oldStatus, currentStatus) {
+        // Find the old column and move the card back
+        const oldColumn = document.querySelector(`.column[data-status="${oldStatus}"]`);
+        if (oldColumn) {
+            oldColumn.querySelector('.column-cards').appendChild(card);
+            card.dataset.status = oldStatus;
+        }
+        updateColumnCounts();
+    }
+
+    function updateColumnCounts() {
+        document.querySelectorAll('.column').forEach(col => {
+            const count = col.querySelectorAll('.card').length;
+            col.querySelector('.column-count').textContent = count;
+            col.classList.toggle('column-empty', count === 0);
+        });
+    }
+
+    // Allow clicking through to detail page — native <a> handles this
+    // We just need to not trigger navigation during drag
+    document.addEventListener('click', function(event) {
+        const card = event.target.closest('.card');
+        if (card && card.classList.contains('dragging')) {
+            event.preventDefault();
+        }
+    });
+
+    // Remove drag styling after drag ends
+    document.addEventListener('dragend', function() {
+        document.querySelectorAll('.dragging, .drag-over').forEach(el => {
+            el.classList.remove('dragging', 'drag-over');
+        });
+        draggedCard = null;
+    });
+    </script>
 </body>
 </html>
