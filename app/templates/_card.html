@@ -18,6 +18,9 @@
         {% endif %}
     </div>
     <div class="card-funder">{{ p.funder }}</div>
+    {% if p.no_go_reason %}
+    <div class="card-reason">{{ p.no_go_reason }}</div>
+    {% endif %}
     <div class="card-meta">
         {% if p.deadline %}
         <span class="meta-item deadline deadline-{{ p.deadline_status }}">

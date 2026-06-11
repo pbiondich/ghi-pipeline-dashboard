@@ -46,7 +46,7 @@ async def dashboard(request: Request):
     proposals = _get_proposals()
     groups = group_by_status(proposals)
     total_active = sum(len(groups[s]) for s in ACTIVE_STATUSES)
-    total_archived = sum(len(groups[s]) for s in ["no-go", "rejected"])
+    total_archived = len(groups["rejected"])
     return templates.TemplateResponse(
         request,
         "dashboard.html",
@@ -87,9 +87,10 @@ async def api_update_proposal(slug: str, body: dict):
         raise HTTPException(status_code=400, detail="Request body must include 'status' field")
     
     new_status = body["status"]
+    reason = body.get("reason", "")
     
     try:
-        updated = update_proposal_status(PROPOSALS_DIR, slug, new_status)
+        updated = update_proposal_status(PROPOSALS_DIR, slug, new_status, reason)
         return updated.to_dict()
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

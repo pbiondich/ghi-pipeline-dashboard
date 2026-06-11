@@ -14,20 +14,21 @@ import frontmatter
 logger = logging.getLogger(__name__)
 
 # Pipeline status order (MUST match Grant's canonical ordering)
-# Terminal statuses (no-go, rejected) are hidden from the default board view.
+# no-go sits between drafting and submitted — the go/no-go decision point.
+# rejected is a hidden terminal status (hidden from default board view).
 STATUS_ORDER = [
     "watching",
     "drafting",
+    "no-go",
     "submitted",
     "under_review",
     "approved",
     "funded",
-    "no-go",
     "rejected",
 ]
 
-# Active (non-terminal) statuses shown on the main board
-ACTIVE_STATUSES = ["watching", "drafting", "submitted", "under_review", "approved", "funded"]
+# Active statuses shown on the main board (includes no-go as a visible column)
+ACTIVE_STATUSES = ["watching", "drafting", "no-go", "submitted", "under_review", "approved", "funded"]
 
 STATUS_LABELS = {
     "watching": "Watching",
@@ -77,6 +78,7 @@ class Proposal:
         self.match_reasons = metadata.get("match_reasons", []) or []
         self.challenges = metadata.get("challenges", []) or []
         self.related_to = metadata.get("related_to", []) or []
+        self.no_go_reason = metadata.get("no_go_reason", "")
 
     @staticmethod
     def _normalize_status(status) -> str:
@@ -215,6 +217,7 @@ class Proposal:
             "challenges": self.challenges,
             "content": self.content,
             "filename": self.filename,
+            "no_go_reason": self.no_go_reason,
         }
 
 
@@ -255,9 +258,10 @@ def get_proposal_by_slug(proposals: list[Proposal], slug: str) -> Optional[Propo
     return None
 
 
-def update_proposal_status(proposals_dir: str, slug: str, new_status: str) -> Proposal:
+def update_proposal_status(proposals_dir: str, slug: str, new_status: str, reason: str = "") -> Proposal:
     """Update the status frontmatter field in a proposal markdown file.
     
+    Optionally saves a no_go_reason to frontmatter when status is 'no-go'.
     Returns the updated Proposal object. Raises ValueError on invalid status.
     """
     if new_status not in STATUS_ORDER:
@@ -294,6 +298,14 @@ def update_proposal_status(proposals_dir: str, slug: str, new_status: str) -> Pr
         
         post.metadata["status"] = new_status
         post.metadata["updated"] = date.today().isoformat()
+
+        # Save reason when set to no-go
+        if new_status == "no-go" and reason:
+            # Store in frontmatter; clear if switching away from no-go
+            post.metadata["no_go_reason"] = reason
+        elif new_status != "no-go":
+            # Clear the reason when moving out of no-go
+            post.metadata.pop("no_go_reason", None)
         
         content = frontmatter.dumps(post)
         with open(filepath, "w") as f:

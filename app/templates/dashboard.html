@@ -14,7 +14,7 @@
                 <span class="header-count">{{ total_active }} active</span>
             </div>
             <div class="header-meta">
-                <button class="archive-toggle" id="archiveBtn">
+                <button class="archive-toggle" id="archiveBtn" onclick="toggleArchive()">
                     Show closed ({{ total_archived }})
                 </button>
                 <a href="/api/proposals" class="api-link">API</a>
@@ -47,16 +47,15 @@
             <span class="header-count">{{ total_archived }} proposal{{ 's' if total_archived != 1 }}</span>
         </div>
         <div class="archive-grid">
-            {% for status in ['no-go', 'rejected'] %}
-            {% set proposals = groups[status] %}
-            {% if proposals %}
+            {% set rejected_proposals = groups['rejected'] %}
+            {% if rejected_proposals %}
             <div class="archive-group">
                 <div class="archive-group-header">
-                    <span>{{ STATUS_EMOJI[status] }}</span>
-                    <h3>{{ STATUS_LABELS[status] }}</h3>
-                    <span class="column-count">{{ proposals|length }}</span>
+                    <span>{{ STATUS_EMOJI['rejected'] }}</span>
+                    <h3>{{ STATUS_LABELS['rejected'] }}</h3>
+                    <span class="column-count">{{ rejected_proposals|length }}</span>
                 </div>
-                {% for p in proposals %}
+                {% for p in rejected_proposals %}
                 <div class="archive-card">
                     <div class="card-header">
                         <h3 class="card-title">{{ p.name }}</h3>
@@ -75,12 +74,11 @@
                 {% endfor %}
             </div>
             {% endif %}
-            {% endfor %}
         </div>
     </div>
 
     <footer class="footer">
-        <p>GHI Grant Pipeline · Regenstrief Institute · Drag cards between columns · <span class="footer-hint">Hover a card and click ⋯ to archive</span></p>
+        <p>GHI Grant Pipeline · Regenstrief Institute · Drag cards between columns · <span class="footer-hint">Click ⋯ to mark as no-go or rejected</span></p>
     </footer>
 
     <script>
@@ -120,6 +118,17 @@
 
         if (newStatus === oldStatus) return;
 
+        // Prompt for reason if dropping on no-go column
+        var reason = '';
+        if (newStatus === 'no-go') {
+            reason = prompt('Why is this a no-go? (Optional)');
+            if (reason === null) {
+                // User cancelled — don't move
+                draggedCard = null;
+                return;
+            }
+        }
+
         // Optimistic UI update
         const targetCards = column.querySelector('.column-cards');
         targetCards.appendChild(draggedCard);
@@ -129,7 +138,7 @@
         fetch(`/api/proposals/${slug}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status: newStatus })
+            body: JSON.stringify({ status: newStatus, reason: reason })
         })
         .then(response => {
             if (!response.ok) {
@@ -158,8 +167,14 @@
         });
     }
 
-    // Archive a card
+    // Archive a card (move to no-go or rejected)
     function archiveCard(slug, status) {
+        var reason = '';
+        if (status === 'no-go') {
+            reason = prompt('Why is this a no-go? (Optional)');
+            if (reason === null) return; // User cancelled
+        }
+
         const card = document.querySelector(`.card[data-slug="${slug}"]`);
         if (!card) return;
 
@@ -171,7 +186,7 @@
         fetch(`/api/proposals/${slug}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status: status })
+            body: JSON.stringify({ status: status, reason: reason })
         })
         .then(response => {
             if (!response.ok) {
@@ -182,7 +197,7 @@
                     updateTotalActive();
                 }
             } else {
-                // Reload so the server renders the updated archive section
+                // Reload so the server renders the updated state
                 location.reload();
             }
         })
@@ -234,7 +249,7 @@
         document.querySelectorAll('.archive-menu.show').forEach(m => m.classList.remove('show'));
     });
 
-    // Toggle archive section (class-based, robust across all browsers)
+    // Toggle archive section (class-based)
     function toggleArchive() {
         const section = document.getElementById('archiveSection');
         const btn = document.getElementById('archiveBtn');
@@ -247,14 +262,6 @@
             btn.textContent = 'Show closed (' + document.querySelectorAll('.archive-card').length + ')';
         }
     }
-
-    // Wire up button on DOM ready
-    document.addEventListener('DOMContentLoaded', function() {
-        var btn = document.getElementById('archiveBtn');
-        if (btn) {
-            btn.addEventListener('click', toggleArchive);
-        }
-    });
 
     // Remove drag styling after drag ends
     document.addEventListener('dragend', function() {

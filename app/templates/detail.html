@@ -107,6 +107,13 @@
             </div>
             {% endif %}
 
+            {% if proposal.no_go_reason %}
+            <div class="detail-section">
+                <label>No-Go Reason</label>
+                <span class="detail-nogo-reason">{{ proposal.no_go_reason }}</span>
+            </div>
+            {% endif %}
+
             {% if proposal.match_reasons %}
             <div class="detail-section detail-section-reasons">
                 <label>Why it fits</label>
@@ -145,10 +152,20 @@
         const newStatus = select.value;
         const oldValue = select.dataset.oldValue || select.querySelector('option[selected]')?.value;
 
+        // Prompt for reason when changing to no-go
+        var reason = '';
+        if (newStatus === 'no-go') {
+            reason = prompt('Why is this a no-go? (Optional)');
+            if (reason === null) {
+                select.value = oldValue;
+                return;
+            }
+        }
+
         fetch('/api/proposals/' + slug, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status: newStatus })
+            body: JSON.stringify({ status: newStatus, reason: reason })
         })
         .then(response => {
             if (response.ok) {
