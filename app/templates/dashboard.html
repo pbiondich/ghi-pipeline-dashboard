@@ -254,16 +254,21 @@
         document.querySelectorAll('.archive-menu.show').forEach(m => m.classList.remove('show'));
     });
 
-    // Toggle archive section (class-based)
+    // Toggle archive section
     function toggleArchive() {
+        console.log('toggleArchive clicked');
         var section = document.getElementById('archiveSection');
         var btn = document.getElementById('archiveBtn');
-        if (!section || !btn) return;
-        if (section.classList.contains('archive-hidden')) {
+        if (!section) { console.log('archiveSection not found'); return; }
+        if (!btn) { console.log('archiveBtn not found'); return; }
+        if (section.style.display === 'none' || section.classList.contains('archive-hidden')) {
             section.classList.remove('archive-hidden');
+            section.style.display = 'block';
+            section.style.border = '3px solid red';
             btn.textContent = 'Hide closed';
         } else {
             section.classList.add('archive-hidden');
+            section.style.display = 'none';
             var count = document.querySelectorAll('.archive-card').length;
             btn.textContent = 'Show closed (' + count + ')';
         }
