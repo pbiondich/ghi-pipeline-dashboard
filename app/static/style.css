@@ -667,6 +667,9 @@ a:hover { color: var(--accent-hover); }
     margin: 0 auto;
     padding: 24px;
 }
+.archive-section.archive-hidden {
+    display: none;
+}
 
 .archive-header {
     display: flex;

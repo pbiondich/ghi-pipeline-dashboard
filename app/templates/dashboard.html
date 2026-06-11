@@ -14,7 +14,7 @@
                 <span class="header-count">{{ total_active }} active</span>
             </div>
             <div class="header-meta">
-                <button class="archive-toggle" onclick="toggleArchive()" id="archiveBtn">
+                <button class="archive-toggle" id="archiveBtn">
                     Show closed ({{ total_archived }})
                 </button>
                 <a href="/api/proposals" class="api-link">API</a>
@@ -41,7 +41,7 @@
     </main>
 
     <!-- Archived section (hidden by default) -->
-    <div class="archive-section" id="archiveSection" style="display:none;">
+    <div class="archive-section archive-hidden" id="archiveSection">
         <div class="archive-header">
             <h2>Closed</h2>
             <span class="header-count">{{ total_archived }} proposal{{ 's' if total_archived != 1 }}</span>
@@ -234,18 +234,27 @@
         document.querySelectorAll('.archive-menu.show').forEach(m => m.classList.remove('show'));
     });
 
-    // Toggle archive section
+    // Toggle archive section (class-based, robust across all browsers)
     function toggleArchive() {
         const section = document.getElementById('archiveSection');
         const btn = document.getElementById('archiveBtn');
-        if (section.style.display === 'none') {
-            section.style.display = 'block';
+        const isHidden = section.classList.contains('archive-hidden');
+        if (isHidden) {
+            section.classList.remove('archive-hidden');
             btn.textContent = 'Hide closed';
         } else {
-            section.style.display = 'none';
+            section.classList.add('archive-hidden');
             btn.textContent = 'Show closed (' + document.querySelectorAll('.archive-card').length + ')';
         }
     }
+
+    // Wire up button on DOM ready
+    document.addEventListener('DOMContentLoaded', function() {
+        var btn = document.getElementById('archiveBtn');
+        if (btn) {
+            btn.addEventListener('click', toggleArchive);
+        }
+    });
 
     // Remove drag styling after drag ends
     document.addEventListener('dragend', function() {
