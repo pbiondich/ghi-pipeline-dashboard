@@ -1,0 +1,43 @@
+<a href="/proposal/{{ p.url_slug }}" class="card" draggable="true"
+   data-slug="{{ p.url_slug }}" data-status="{{ p.status }}"
+   data-fit="{{ p.fit_rating }}" data-deadline="{{ p.deadline_status }}"
+   ondragstart="onDragStart(event)">
+    <div class="card-archive-area">
+        <button class="card-archive-btn" title="Archive this proposal">⋯</button>
+        <div class="archive-menu">
+            <div class="archive-menu-item" data-status="no-go">🚫 No-go</div>
+            {% if p.status in ('submitted', 'under_review', 'approved') %}
+            <div class="archive-menu-item" data-status="rejected">❌ Rejected</div>
+            {% endif %}
+        </div>
+    </div>
+    <div class="card-header">
+        <h3 class="card-title">{{ p.name }}</h3>
+        {% if p.fit_rating %}
+        <span class="fit-badge fit-{{ p.fit_rating }}">{{ p.fit_rating }}</span>
+        {% endif %}
+    </div>
+    <div class="card-funder">{{ p.funder }}</div>
+    <div class="card-meta">
+        {% if p.deadline %}
+        <span class="meta-item deadline deadline-{{ p.deadline_status }}">
+            {% if p.deadline_status == 'past' %}
+            ⏰ Past due
+            {% elif p.deadline_status == 'urgent' %}
+            ⏰ {{ p.days_until_deadline }}d left
+            {% else %}
+            📅 {{ p.deadline.strftime('%b %d') }}
+            {% endif %}
+        </span>
+        {% endif %}
+        <span class="meta-item amount">{{ p.amount_display }}</span>
+    </div>
+    {% if p.region %}
+    <div class="card-region">{{ p.region }}</div>
+    {% endif %}
+    {% if p.opportunity and p.opportunity|length > 80 %}
+    <div class="card-opportunity" title="{{ p.opportunity }}">{{ p.opportunity[:80] }}…</div>
+    {% elif p.opportunity %}
+    <div class="card-opportunity">{{ p.opportunity }}</div>
+    {% endif %}
+</a>

@@ -14,6 +14,7 @@ import frontmatter
 logger = logging.getLogger(__name__)
 
 # Pipeline status order (MUST match Grant's canonical ordering)
+# Terminal statuses (no-go, rejected) are hidden from the default board view.
 STATUS_ORDER = [
     "watching",
     "drafting",
@@ -21,8 +22,12 @@ STATUS_ORDER = [
     "under_review",
     "approved",
     "funded",
+    "no-go",
     "rejected",
 ]
+
+# Active (non-terminal) statuses shown on the main board
+ACTIVE_STATUSES = ["watching", "drafting", "submitted", "under_review", "approved", "funded"]
 
 STATUS_LABELS = {
     "watching": "Watching",
@@ -31,6 +36,7 @@ STATUS_LABELS = {
     "under_review": "Under Review",
     "approved": "Approved",
     "funded": "Funded",
+    "no-go": "No-Go",
     "rejected": "Rejected",
 }
 
@@ -41,6 +47,7 @@ STATUS_EMOJI = {
     "under_review": "🔍",
     "approved": "✅",
     "funded": "🎉",
+    "no-go": "🚫",
     "rejected": "❌",
 }
 

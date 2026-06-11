@@ -11,17 +11,19 @@
         <div class="header-inner">
             <div class="header-brand">
                 <h1>GHI Pipeline</h1>
-                <span class="header-count">{{ total }} proposal{{ 's' if total != 1 }}</span>
+                <span class="header-count">{{ total_active }} active</span>
             </div>
             <div class="header-meta">
-                <span class="last-updated">Live from brain files</span>
+                <button class="archive-toggle" onclick="toggleArchive()" id="archiveBtn">
+                    Show closed ({{ total_archived }})
+                </button>
                 <a href="/api/proposals" class="api-link">API</a>
             </div>
         </div>
     </header>
 
-    <main class="pipeline">
-        {% for status in STATUS_ORDER %}
+    <main class="pipeline" id="mainPipeline">
+        {% for status in ACTIVE_STATUSES %}
         {% set proposals = groups[status] %}
         <section class="column{% if proposals|length == 0 %} column-empty{% endif %}" data-status="{{ status }}" ondragover="onDragOver(event)" ondrop="onDrop(event)">
             <div class="column-header">
@@ -31,7 +33,31 @@
             </div>
             <div class="column-cards">
                 {% for p in proposals %}
-                <a href="/proposal/{{ p.url_slug }}" class="card" draggable="true" data-slug="{{ p.url_slug }}" data-status="{{ p.status }}" data-fit="{{ p.fit_rating }}" data-deadline="{{ p.deadline_status }}" ondragstart="onDragStart(event)">
+                {% include "_card.html" %}
+                {% endfor %}
+            </div>
+        </section>
+        {% endfor %}
+    </main>
+
+    <!-- Archived section (hidden by default) -->
+    <div class="archive-section" id="archiveSection" style="display:none;">
+        <div class="archive-header">
+            <h2>Closed</h2>
+            <span class="header-count">{{ total_archived }} proposal{{ 's' if total_archived != 1 }}</span>
+        </div>
+        <div class="archive-grid">
+            {% for status in ['no-go', 'rejected'] %}
+            {% set proposals = groups[status] %}
+            {% if proposals %}
+            <div class="archive-group">
+                <div class="archive-group-header">
+                    <span>{{ STATUS_EMOJI[status] }}</span>
+                    <h3>{{ STATUS_LABELS[status] }}</h3>
+                    <span class="column-count">{{ proposals|length }}</span>
+                </div>
+                {% for p in proposals %}
+                <div class="archive-card">
                     <div class="card-header">
                         <h3 class="card-title">{{ p.name }}</h3>
                         {% if p.fit_rating %}
@@ -40,36 +66,21 @@
                     </div>
                     <div class="card-funder">{{ p.funder }}</div>
                     <div class="card-meta">
-                        {% if p.deadline %}
-                        <span class="meta-item deadline deadline-{{ p.deadline_status }}">
-                            {% if p.deadline_status == 'past' %}
-                            ⏰ Past due
-                            {% elif p.deadline_status == 'urgent' %}
-                            ⏰ {{ p.days_until_deadline }}d left
-                            {% else %}
-                            📅 {{ p.deadline.strftime('%b %d') }}
-                            {% endif %}
-                        </span>
-                        {% endif %}
                         <span class="meta-item amount">{{ p.amount_display }}</span>
+                        {% if p.updated %}
+                        <span class="meta-item">Closed {{ p.updated.strftime('%b %d') }}</span>
+                        {% endif %}
                     </div>
-                    {% if p.region %}
-                    <div class="card-region">{{ p.region }}</div>
-                    {% endif %}
-                    {% if p.opportunity and p.opportunity|length > 80 %}
-                    <div class="card-opportunity" title="{{ p.opportunity }}">{{ p.opportunity[:80] }}…</div>
-                    {% elif p.opportunity %}
-                    <div class="card-opportunity">{{ p.opportunity }}</div>
-                    {% endif %}
-                </a>
+                </div>
                 {% endfor %}
             </div>
-        </section>
-        {% endfor %}
-    </main>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </div>
 
     <footer class="footer">
-        <p>GHI Grant Pipeline · Regenstrief Institute · Drag cards between columns to change status</p>
+        <p>GHI Grant Pipeline · Regenstrief Institute · Drag cards between columns · <span class="footer-hint">Hover a card and click ⋯ to archive</span></p>
     </footer>
 
     <script>
@@ -87,7 +98,6 @@
     function onDragOver(event) {
         event.preventDefault();
         event.dataTransfer.dropEffect = 'move';
-        // Highlight the target column
         const column = event.target.closest('.column');
         if (column) {
             document.querySelectorAll('.column.drag-over').forEach(c => c.classList.remove('drag-over'));
@@ -97,7 +107,6 @@
 
     function onDrop(event) {
         event.preventDefault();
-        // Clear highlights
         document.querySelectorAll('.column.drag-over, .card.dragging').forEach(el => {
             el.classList.remove('drag-over', 'dragging');
         });
@@ -109,18 +118,14 @@
         const oldStatus = draggedCard.dataset.status;
         const slug = draggedCard.dataset.slug;
 
-        // No-op if same column
         if (newStatus === oldStatus) return;
 
-        // Optimistic UI update: move the card
+        // Optimistic UI update
         const targetCards = column.querySelector('.column-cards');
         targetCards.appendChild(draggedCard);
         draggedCard.dataset.status = newStatus;
-
-        // Update column counts
         updateColumnCounts();
 
-        // Fire PATCH request
         fetch(`/api/proposals/${slug}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
@@ -128,21 +133,15 @@
         })
         .then(response => {
             if (!response.ok) {
-                // Revert on failure
-                console.error('Failed to update status:', response.statusText);
                 moveCardBack(draggedCard, oldStatus, newStatus);
             }
         })
-        .catch(err => {
-            console.error('Network error:', err);
-            moveCardBack(draggedCard, oldStatus, newStatus);
-        });
+        .catch(() => moveCardBack(draggedCard, oldStatus, newStatus));
 
         draggedCard = null;
     }
 
-    function moveCardBack(card, oldStatus, currentStatus) {
-        // Find the old column and move the card back
+    function moveCardBack(card, oldStatus) {
         const oldColumn = document.querySelector(`.column[data-status="${oldStatus}"]`);
         if (oldColumn) {
             oldColumn.querySelector('.column-cards').appendChild(card);
@@ -159,14 +158,97 @@
         });
     }
 
-    // Allow clicking through to detail page — native <a> handles this
-    // We just need to not trigger navigation during drag
+    // Archive a card
+    function archiveCard(slug, status) {
+        const card = document.querySelector(`.card[data-slug="${slug}"]`);
+        if (!card) return;
+
+        const column = card.closest('.column');
+        card.remove();
+        updateColumnCounts();
+        updateTotalActive();
+
+        fetch(`/api/proposals/${slug}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: status })
+        })
+        .then(response => {
+            if (!response.ok) {
+                // Put the card back
+                if (column) {
+                    column.querySelector('.column-cards').appendChild(card);
+                    updateColumnCounts();
+                    updateTotalActive();
+                }
+            } else {
+                // Reload on next archive toggle to show updated closed count
+                window._needsReload = true;
+            }
+        })
+        .catch(() => {
+            if (column) {
+                column.querySelector('.column-cards').appendChild(card);
+                updateColumnCounts();
+                updateTotalActive();
+            }
+        });
+    }
+
+    function updateTotalActive() {
+        const active = document.querySelectorAll('.column .card').length;
+        document.querySelector('.header-count').textContent = active + ' active';
+    }
+
+    // Archive menu toggle
     document.addEventListener('click', function(event) {
-        const card = event.target.closest('.card');
-        if (card && card.classList.contains('dragging')) {
+        const btn = event.target.closest('.card-archive-btn');
+        if (btn) {
             event.preventDefault();
+            event.stopPropagation();
+            const menu = btn.nextElementSibling;
+            // Close all other menus
+            document.querySelectorAll('.archive-menu.show').forEach(m => {
+                if (m !== menu) m.classList.remove('show');
+            });
+            menu.classList.toggle('show');
+            return;
         }
+
+        // Handle menu item clicks
+        const item = event.target.closest('.archive-menu-item');
+        if (item) {
+            event.preventDefault();
+            const menu = item.closest('.archive-menu');
+            const card = menu.closest('.card');
+            if (card) {
+                const slug = card.dataset.slug;
+                const status = item.dataset.status;
+                archiveCard(slug, status);
+            }
+            menu.classList.remove('show');
+            return;
+        }
+
+        // Close menus on outside click
+        document.querySelectorAll('.archive-menu.show').forEach(m => m.classList.remove('show'));
     });
+
+    // Toggle archive section
+    function toggleArchive() {
+        const section = document.getElementById('archiveSection');
+        const btn = document.getElementById('archiveBtn');
+        if (section.style.display === 'none') {
+            section.style.display = 'block';
+            btn.textContent = 'Hide closed';
+            if (window._needsReload) {
+                location.reload();
+            }
+        } else {
+            section.style.display = 'none';
+            btn.textContent = 'Show closed (' + document.querySelectorAll('.archive-card').length + ')';
+        }
+    }
 
     // Remove drag styling after drag ends
     document.addEventListener('dragend', function() {
@@ -174,6 +256,13 @@
             el.classList.remove('dragging', 'drag-over');
         });
         draggedCard = null;
+    });
+
+    // Close archive menus on Escape
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            document.querySelectorAll('.archive-menu.show').forEach(m => m.classList.remove('show'));
+        }
     });
     </script>
 </body>

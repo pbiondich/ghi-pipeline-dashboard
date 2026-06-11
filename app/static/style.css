@@ -260,6 +260,146 @@ a:hover { color: var(--accent-hover); }
     background: rgba(0, 122, 255, 0.06);
 }
 
+/* === Archive menu === */
+.card-archive-area {
+    position: relative;
+    float: right;
+    margin: -2px -2px 0 0;
+}
+
+.card-archive-btn {
+    background: none;
+    border: none;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    padding: 2px 6px;
+    border-radius: 4px;
+    opacity: 0;
+    transition: opacity 0.12s ease;
+    letter-spacing: 1px;
+}
+.card:hover .card-archive-btn {
+    opacity: 1;
+}
+.card-archive-btn:hover {
+    background: var(--bg);
+    color: var(--text);
+}
+
+.archive-menu {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    z-index: 20;
+    min-width: 140px;
+    overflow: hidden;
+}
+.archive-menu.show {
+    display: block;
+}
+
+.archive-menu-item {
+    padding: 8px 14px;
+    font-size: 13px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.1s;
+}
+.archive-menu-item:hover {
+    background: var(--bg);
+}
+
+/* === Archive toggle button === */
+.archive-toggle {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 4px 12px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.12s ease;
+}
+.archive-toggle:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+/* === Archive section === */
+.archive-section {
+    max-width: 1440px;
+    margin: 0 auto 40px;
+    padding: 0 24px;
+}
+
+.archive-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 20px 0 16px;
+    border-top: 2px solid var(--border);
+    margin-bottom: 16px;
+}
+.archive-header h2 {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.archive-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.archive-group-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+}
+.archive-group-header h3 {
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+}
+
+.archive-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    margin-bottom: 6px;
+    opacity: 0.65;
+}
+.archive-card .card-title {
+    font-size: 13px;
+}
+.archive-card .card-funder {
+    font-size: 11px;
+}
+.archive-card .card-meta {
+    font-size: 11px;
+    margin-top: 4px;
+}
+
+.footer-hint {
+    color: var(--text-tertiary);
+    font-size: 11px;
+}
+
 /* === Deadline colors === */
 .deadline-urgent { color: var(--urgent); font-weight: 600; }
 .deadline-soon { color: var(--soon); font-weight: 500; }
