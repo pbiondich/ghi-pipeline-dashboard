@@ -1,0 +1,474 @@
+/* === GHI Pipeline Dashboard — clean, modern === */
+
+:root {
+    --bg: #f6f6f8;
+    --surface: #ffffff;
+    --border: #e5e5ea;
+    --text: #1c1c1e;
+    --text-secondary: #8e8e93;
+    --text-tertiary: #aeaeb2;
+    --accent: #007aff;
+    --accent-hover: #0066d6;
+    --watching: #5856d6;
+    --drafting: #ff9500;
+    --submitted: #007aff;
+    --under-review: #34c759;
+    --approved: #007aff;
+    --funded: #30d158;
+    --rejected: #8e8e93;
+    --fit-high: #30d158;
+    --fit-medium: #ff9500;
+    --fit-low: #ff3b30;
+    --fit-weak: #aeaeb2;
+    --urgent: #ff3b30;
+    --soon: #ff9500;
+    --radius: 10px;
+    --radius-sm: 6px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { color: var(--accent-hover); }
+
+/* === Header === */
+.header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    backdrop-filter: blur(20px);
+    background: rgba(255,255,255,0.85);
+}
+
+.header-inner {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.header-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.header-brand h1 {
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -0.3px;
+}
+
+.header-count {
+    font-size: 14px;
+    color: var(--text-secondary);
+    background: var(--bg);
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-weight: 500;
+}
+
+.header-meta {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.api-link {
+    font-size: 12px;
+    font-weight: 500;
+    padding: 4px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+}
+.api-link:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+/* === Pipeline Board === */
+.pipeline {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 24px;
+    display: flex;
+    gap: 16px;
+    min-height: calc(100vh - 80px);
+    overflow-x: auto;
+}
+
+.column {
+    min-width: 280px;
+    max-width: 320px;
+    flex: 1;
+}
+
+.column-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 4px 16px;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 12px;
+}
+
+.column-emoji { font-size: 16px; }
+
+.column-title {
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+}
+
+.column-count {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-tertiary);
+    background: var(--bg);
+    padding: 0 8px;
+    border-radius: 10px;
+    margin-left: auto;
+}
+
+/* === Column color accents === */
+.column[data-status="watching"] .column-header { border-bottom-color: var(--watching); }
+.column[data-status="drafting"] .column-header { border-bottom-color: var(--drafting); }
+.column[data-status="submitted"] .column-header { border-bottom-color: var(--submitted); }
+.column[data-status="under_review"] .column-header { border-bottom-color: var(--under-review); }
+.column[data-status="approved"] .column-header { border-bottom-color: var(--approved); }
+.column[data-status="funded"] .column-header { border-bottom-color: var(--funded); }
+.column[data-status="rejected"] .column-header { border-bottom-color: var(--rejected); }
+
+.column-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* === Cards === */
+.card {
+    display: block;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.15s ease;
+    cursor: pointer;
+}
+
+.card:hover {
+    border-color: var(--accent);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    transform: translateY(-1px);
+}
+
+.card-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    justify-content: space-between;
+}
+
+.card-title {
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.4;
+    color: var(--text);
+    flex: 1;
+}
+
+.card-funder {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 3px;
+}
+
+.card-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 8px;
+    font-size: 12px;
+}
+
+.meta-item {
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+.card-region {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.card-opportunity {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    margin-top: 6px;
+    line-height: 1.3;
+}
+
+/* === Deadline colors === */
+.deadline-urgent { color: var(--urgent); font-weight: 600; }
+.deadline-soon { color: var(--soon); font-weight: 500; }
+.deadline-past { color: var(--urgent); font-weight: 600; text-decoration: line-through; opacity: 0.7; }
+.deadline-future { color: var(--text-secondary); }
+
+/* === Fit badges === */
+.fit-badge {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    flex-shrink: 0;
+}
+
+.fit-high { background: rgba(48, 209, 88, 0.12); color: #248a3d; }
+.fit-medium { background: rgba(255, 149, 0, 0.12); color: #b35e00; }
+.fit-low { background: rgba(255, 59, 48, 0.08); color: #b31e1e; }
+.fit-weak { background: rgba(142, 142, 147, 0.12); color: var(--text-tertiary); }
+
+/* === Detail page === */
+.header-detail .back-link {
+    font-size: 14px;
+    font-weight: 500;
+    margin-right: 12px;
+}
+
+.detail {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 32px 24px;
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 40px;
+}
+
+.detail-sidebar {
+    position: sticky;
+    top: 90px;
+    align-self: start;
+}
+
+.detail-section {
+    margin-bottom: 20px;
+}
+
+.detail-section label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-tertiary);
+    margin-bottom: 4px;
+}
+
+.detail-section > span {
+    font-size: 14px;
+    color: var(--text);
+}
+
+.detail-section code {
+    font-size: 12px;
+    background: var(--bg);
+    padding: 1px 6px;
+    border-radius: 4px;
+}
+
+.detail-status[data-status="watching"] { color: var(--watching); }
+.detail-status[data-status="drafting"] { color: var(--drafting); }
+.detail-status[data-status="submitted"] { color: var(--submitted); }
+.detail-status[data-status="under_review"] { color: var(--under-review); }
+.detail-status[data-status="approved"] { color: var(--approved); }
+.detail-status[data-status="funded"] { color: var(--funded); }
+.detail-status[data-status="rejected"] { color: var(--rejected); }
+
+.deadline-countdown {
+    color: var(--text-secondary);
+    font-size: 12px;
+}
+
+.deadline-note {
+    display: block;
+    font-size: 12px;
+    color: var(--text-tertiary);
+    margin-top: 2px;
+}
+
+/* Tags */
+.tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.tag {
+    font-size: 11px;
+    font-weight: 500;
+    background: var(--bg);
+    padding: 2px 8px;
+    border-radius: 4px;
+    color: var(--text-secondary);
+}
+
+/* Reasons and challenges */
+.detail-section ul {
+    padding-left: 16px;
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.detail-section li {
+    margin-bottom: 4px;
+    line-height: 1.4;
+}
+
+.detail-section-reasons li::marker { color: var(--fit-high); }
+.detail-section-challenges li::marker { color: var(--fit-low); }
+
+/* === Detail content === */
+.detail-content {
+    min-width: 0;
+    line-height: 1.7;
+}
+
+.detail-content h1 {
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    letter-spacing: -0.3px;
+}
+
+.detail-content h2 {
+    font-size: 18px;
+    font-weight: 600;
+    margin-top: 28px;
+    margin-bottom: 8px;
+}
+
+.detail-content h3 {
+    font-size: 16px;
+    font-weight: 600;
+    margin-top: 20px;
+    margin-bottom: 6px;
+}
+
+.detail-content p {
+    margin-bottom: 12px;
+    color: var(--text);
+}
+
+.detail-content ul, .detail-content ol {
+    padding-left: 20px;
+    margin-bottom: 12px;
+}
+
+.detail-content li {
+    margin-bottom: 4px;
+}
+
+.detail-content strong {
+    font-weight: 600;
+}
+
+.detail-content code {
+    font-size: 13px;
+    background: var(--bg);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+}
+
+.detail-content pre {
+    background: #1c1c1e;
+    color: #e5e5ea;
+    padding: 16px;
+    border-radius: var(--radius);
+    overflow-x: auto;
+    margin-bottom: 16px;
+    font-size: 13px;
+}
+
+.detail-content pre code {
+    background: none;
+    padding: 0;
+    color: inherit;
+}
+
+/* === Footer === */
+.footer {
+    border-top: 1px solid var(--border);
+    padding: 20px 24px;
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-tertiary);
+}
+
+.footer code {
+    font-size: 11px;
+}
+
+/* === Responsive === */
+@media (max-width: 900px) {
+    .pipeline {
+        flex-direction: column;
+        overflow-x: visible;
+        padding: 16px;
+    }
+    .column {
+        min-width: 100%;
+        max-width: 100%;
+    }
+    .detail {
+        grid-template-columns: 1fr;
+        padding: 16px;
+    }
+    .detail-sidebar {
+        position: static;
+    }
+    .header-inner {
+        padding: 12px 16px;
+    }
+}
+
+/* === Smooth scroll for pipeline overflow === */
+.pipeline {
+    scroll-behavior: smooth;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+}
+.pipeline::-webkit-scrollbar {
+    height: 6px;
+}
+.pipeline::-webkit-scrollbar-track {
+    background: transparent;
+}
+.pipeline::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 3px;
+}

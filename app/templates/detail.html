@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ proposal.name }} — GHI Pipeline</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <header class="header header-detail">
+        <div class="header-inner">
+            <div class="header-brand">
+                <a href="/" class="back-link">← Pipeline</a>
+                <h1>{{ proposal.name }}</h1>
+            </div>
+            <div class="header-meta">
+                <a href="/api/proposals/{{ proposal.url_slug }}" class="api-link">JSON</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="detail">
+        <div class="detail-sidebar">
+            <div class="detail-section">
+                <label>Status</label>
+                <span class="detail-status" data-status="{{ proposal.status }}">
+                    {{ proposal.status_emoji }} {{ proposal.status_label }}
+                </span>
+            </div>
+
+            <div class="detail-section">
+                <label>Funder</label>
+                <span>{{ proposal.funder }}</span>
+            </div>
+
+            {% if proposal.fit_rating %}
+            <div class="detail-section">
+                <label>Fit</label>
+                <span class="fit-badge fit-{{ proposal.fit_rating }}">{{ proposal.fit_rating }}</span>
+            </div>
+            {% endif %}
+
+            {% if proposal.amount_display %}
+            <div class="detail-section">
+                <label>Budget</label>
+                <span>{{ proposal.amount_display }}</span>
+            </div>
+            {% endif %}
+
+            {% if proposal.deadline %}
+            <div class="detail-section">
+                <label>Deadline</label>
+                <span class="deadline-{{ proposal.deadline_status }}">
+                    {{ proposal.deadline.strftime('%B %d, %Y') }}
+                    {% if proposal.days_until_deadline is not none %}
+                    <span class="deadline-countdown">
+                        ({% if proposal.days_until_deadline < 0 %}{{ -proposal.days_until_deadline }}d past{% elif proposal.days_until_deadline == 0 %}Today{% else %}{{ proposal.days_until_deadline }}d left{% endif %})
+                    </span>
+                    {% endif %}
+                </span>
+                {% if proposal.deadline_note %}
+                <span class="deadline-note">{{ proposal.deadline_note }}</span>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            {% if proposal.region %}
+            <div class="detail-section">
+                <label>Region</label>
+                <span>{{ proposal.region }}</span>
+            </div>
+            {% endif %}
+
+            {% if proposal.mechanism %}
+            <div class="detail-section">
+                <label>Mechanism</label>
+                <span>{{ proposal.mechanism }}</span>
+            </div>
+            {% endif %}
+
+            {% if proposal.grant_id %}
+            <div class="detail-section">
+                <label>Grant ID</label>
+                <span><code>{{ proposal.grant_id }}</code></span>
+            </div>
+            {% endif %}
+
+            {% if proposal.tags %}
+            <div class="detail-section">
+                <label>Tags</label>
+                <div class="tags">
+                    {% for tag in proposal.tags %}
+                    <span class="tag">{{ tag }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if proposal.updated %}
+            <div class="detail-section">
+                <label>Updated</label>
+                <span>{{ proposal.updated.strftime('%b %d, %Y') }}</span>
+            </div>
+            {% endif %}
+
+            {% if proposal.match_reasons %}
+            <div class="detail-section detail-section-reasons">
+                <label>Why it fits</label>
+                <ul>
+                    {% for reason in proposal.match_reasons %}
+                    <li>{{ reason }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            {% if proposal.challenges %}
+            <div class="detail-section detail-section-challenges">
+                <label>Challenges</label>
+                <ul>
+                    {% for challenge in proposal.challenges %}
+                    <li>{{ challenge }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+        </div>
+
+        <article class="detail-content">
+            {{ content_html|safe }}
+        </article>
+    </main>
+
+    <footer class="footer">
+        <p><a href="/">← Back to Pipeline</a></p>
+    </footer>
+</body>
+</html>

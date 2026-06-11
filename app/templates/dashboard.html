@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GHI Pipeline Dashboard</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <header class="header">
+        <div class="header-inner">
+            <div class="header-brand">
+                <h1>GHI Pipeline</h1>
+                <span class="header-count">{{ total }} proposal{{ 's' if total != 1 }}</span>
+            </div>
+            <div class="header-meta">
+                <span class="last-updated">Live from brain files</span>
+                <a href="/api/proposals" class="api-link">API</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="pipeline">
+        {% for status in STATUS_ORDER %}
+        {% set proposals = groups[status] %}
+        {% if proposals %}
+        <section class="column" data-status="{{ status }}">
+            <div class="column-header">
+                <span class="column-emoji">{{ STATUS_EMOJI[status] }}</span>
+                <h2 class="column-title">{{ STATUS_LABELS[status] }}</h2>
+                <span class="column-count">{{ proposals|length }}</span>
+            </div>
+            <div class="column-cards">
+                {% for p in proposals %}
+                <a href="/proposal/{{ p.url_slug }}" class="card" data-fit="{{ p.fit_rating }}" data-deadline="{{ p.deadline_status }}">
+                    <div class="card-header">
+                        <h3 class="card-title">{{ p.name }}</h3>
+                        {% if p.fit_rating %}
+                        <span class="fit-badge fit-{{ p.fit_rating }}">{{ p.fit_rating }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="card-funder">{{ p.funder }}</div>
+                    <div class="card-meta">
+                        {% if p.deadline %}
+                        <span class="meta-item deadline deadline-{{ p.deadline_status }}">
+                            {% if p.deadline_status == 'past' %}
+                            ⏰ Past due
+                            {% elif p.deadline_status == 'urgent' %}
+                            ⏰ {{ p.days_until_deadline }}d left
+                            {% else %}
+                            📅 {{ p.deadline.strftime('%b %d') }}
+                            {% endif %}
+                        </span>
+                        {% endif %}
+                        <span class="meta-item amount">{{ p.amount_display }}</span>
+                    </div>
+                    {% if p.region %}
+                    <div class="card-region">{{ p.region }}</div>
+                    {% endif %}
+                    {% if p.opportunity and p.opportunity|length > 80 %}
+                    <div class="card-opportunity" title="{{ p.opportunity }}">{{ p.opportunity[:80] }}…</div>
+                    {% elif p.opportunity %}
+                    <div class="card-opportunity">{{ p.opportunity }}</div>
+                    {% endif %}
+                </a>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+        {% endfor %}
+    </main>
+
+    <footer class="footer">
+        <p>GHI Grant Pipeline · Regenstrief Institute · Data sourced from <code>~/brain/proposals/</code></p>
+    </footer>
+</body>
+</html>
