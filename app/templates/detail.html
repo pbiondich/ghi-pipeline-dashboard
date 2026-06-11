@@ -23,9 +23,13 @@
         <div class="detail-sidebar">
             <div class="detail-section">
                 <label>Status</label>
-                <span class="detail-status" data-status="{{ proposal.status }}">
-                    {{ proposal.status_emoji }} {{ proposal.status_label }}
-                </span>
+                <select class="detail-status-select" data-slug="{{ proposal.url_slug }}" onchange="changeStatus(this)">
+                    {% for s in STATUS_ORDER %}
+                    <option value="{{ s }}" {% if s == proposal.status %}selected{% endif %}>
+                        {{ STATUS_EMOJI[s] }} {{ STATUS_LABELS[s] }}
+                    </option>
+                    {% endfor %}
+                </select>
             </div>
 
             <div class="detail-section">
@@ -134,5 +138,34 @@
     <footer class="footer">
         <p><a href="/">← Back to Pipeline</a></p>
     </footer>
+
+    <script>
+    function changeStatus(select) {
+        const slug = select.dataset.slug;
+        const newStatus = select.value;
+        const oldValue = select.dataset.oldValue || select.querySelector('option[selected]')?.value;
+
+        fetch('/api/proposals/' + slug, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: newStatus })
+        })
+        .then(response => {
+            if (response.ok) {
+                select.dataset.oldValue = newStatus;
+                // Update all matching option elements so the new selection sticks
+                select.querySelectorAll('option').forEach(o => o.removeAttribute('selected'));
+                select.querySelector('option[value="' + newStatus + '"]')?.setAttribute('selected', '');
+            } else {
+                alert('Failed to update status. Try again.');
+                select.value = oldValue;
+            }
+        })
+        .catch(() => {
+            alert('Network error. Try again.');
+            select.value = oldValue;
+        });
+    }
+    </script>
 </body>
 </html>

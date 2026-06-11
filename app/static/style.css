@@ -642,3 +642,160 @@ a:hover { color: var(--accent-hover); }
     background: var(--border);
     border-radius: 3px;
 }
+
+/* === Archive toggle button in header === */
+.archive-toggle {
+    font-size: 13px;
+    font-weight: 500;
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 6px 14px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: all 0.15s;
+}
+.archive-toggle:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(0,122,255,0.05);
+}
+
+/* === Archive section (hidden by default) === */
+.archive-section {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 24px;
+}
+
+.archive-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+}
+.archive-header h2 {
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.archive-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 24px;
+}
+
+.archive-group-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+}
+.archive-group-header h3 {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.archive-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 16px;
+    margin-bottom: 8px;
+    opacity: 0.6;
+    transition: opacity 0.15s;
+}
+.archive-card:hover {
+    opacity: 0.85;
+}
+
+/* === Detail view status dropdown === */
+.detail-status-select {
+    font-size: 14px;
+    font-weight: 500;
+    padding: 6px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text);
+    cursor: pointer;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.15s;
+}
+.detail-status-select:hover,
+.detail-status-select:focus {
+    border-color: var(--accent);
+}
+
+/* === Card archive menu (three-dot button + dropdown) === */
+.card-archive-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 24px;
+    text-align: center;
+    color: transparent;
+    transition: all 0.12s;
+    z-index: 2;
+}
+.card:hover .card-archive-btn {
+    color: var(--text-secondary);
+    background: var(--bg);
+}
+.card-archive-btn:hover {
+    color: var(--text) !important;
+    background: var(--border) !important;
+}
+
+.archive-menu {
+    position: absolute;
+    top: 34px;
+    right: 4px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    min-width: 120px;
+    display: none;
+    z-index: 10;
+    overflow: hidden;
+}
+.archive-menu.show { display: block; }
+
+.archive-menu-item {
+    display: block;
+    width: 100%;
+    padding: 8px 14px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 13px;
+    text-align: left;
+    color: var(--text);
+    transition: background 0.1s;
+}
+.archive-menu-item:hover {
+    background: var(--bg);
+}
+.archive-menu-item:not(:last-child) {
+    border-bottom: 1px solid var(--border);
+}
+
+.card {
+    position: relative;
+}

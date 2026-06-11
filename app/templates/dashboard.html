@@ -182,8 +182,8 @@
                     updateTotalActive();
                 }
             } else {
-                // Reload on next archive toggle to show updated closed count
-                window._needsReload = true;
+                // Reload so the server renders the updated archive section
+                location.reload();
             }
         })
         .catch(() => {
@@ -241,9 +241,6 @@
         if (section.style.display === 'none') {
             section.style.display = 'block';
             btn.textContent = 'Hide closed';
-            if (window._needsReload) {
-                location.reload();
-            }
         } else {
             section.style.display = 'none';
             btn.textContent = 'Show closed (' + document.querySelectorAll('.archive-card').length + ')';
