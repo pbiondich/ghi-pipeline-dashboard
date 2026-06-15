@@ -19,7 +19,7 @@
     </div>
     <div class="card-funder">{{ p.funder }}</div>
     {% if p.no_go_reason %}
-    <div class="card-reason">{{ p.no_go_reason }}</div>
+    <div class="card-reason">{{ p.no_go_reason|linkify }}</div>
     {% endif %}
     <div class="card-meta">
         {% if p.deadline %}
@@ -39,8 +39,8 @@
     <div class="card-region">{{ p.region }}</div>
     {% endif %}
     {% if p.opportunity and p.opportunity|length > 80 %}
-    <div class="card-opportunity" title="{{ p.opportunity }}">{{ p.opportunity[:80] }}…</div>
+    <div class="card-opportunity" title="{{ p.opportunity }}">{{ p.opportunity[:80]|linkify }}…</div>
     {% elif p.opportunity %}
-    <div class="card-opportunity">{{ p.opportunity }}</div>
+    <div class="card-opportunity">{{ p.opportunity|linkify }}</div>
     {% endif %}
 </a>
