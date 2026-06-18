@@ -65,6 +65,7 @@ class Proposal:
         self.grant_id = metadata.get("grant_id", "")
         self.region = metadata.get("region", "")
         self.mechanism = metadata.get("mechanism", "")
+        self.url = metadata.get("url", "")
         self.fit_rating = self._normalize_fit(metadata.get("fit_rating", ""))
         self.tags = metadata.get("tags", []) or []
         self.deadline = self._parse_deadline(metadata.get("deadline"))
@@ -218,6 +219,7 @@ class Proposal:
             "content": self.content,
             "filename": self.filename,
             "no_go_reason": self.no_go_reason,
+            "url": self.url,
         }
 
 

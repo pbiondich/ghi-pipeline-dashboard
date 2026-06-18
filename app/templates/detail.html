@@ -82,6 +82,13 @@
             </div>
             {% endif %}
 
+            {% if proposal.url %}
+            <div class="detail-section">
+                <label>Opportunity Link</label>
+                <span class="detail-url">{{ proposal.url|linkify }}</span>
+            </div>
+            {% endif %}
+
             {% if proposal.grant_id %}
             <div class="detail-section">
                 <label>Grant ID</label>
