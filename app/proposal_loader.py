@@ -60,7 +60,7 @@ class Proposal:
         self.slug = metadata.get("slug", filename.replace(".md", ""))
         self.name = metadata.get("name", "Untitled Proposal")
         self.status = self._normalize_status(metadata.get("status", "watching"))
-        self.funder = metadata.get("funder", "")
+        self.funder = metadata.get("funder", "") or metadata.get("target", "")
         self.opportunity = metadata.get("opportunity", "")
         self.grant_id = metadata.get("grant_id", "")
         self.region = metadata.get("region", "")

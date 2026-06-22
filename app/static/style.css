@@ -560,6 +560,16 @@ a:hover { color: var(--accent-hover); }
     line-height: 1.7;
 }
 
+.detail-content a {
+    color: var(--accent);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+.detail-content a:hover {
+    color: var(--accent-hover);
+    text-decoration: underline;
+}
+
 .detail-content h1 {
     font-size: 24px;
     font-weight: 700;
