@@ -1,0 +1,279 @@
+;datausecommunity.com
+datausecommunity.com.	86400	IN	SOA	ns10.digicertdns.com. dns.digicertdns.com. 2009010112 43200 3600 1209600 180
+datausecommunity.com.	86400	IN	TXT	"google-site-verification=iwxGzPoFBCbtpt2P6lLPJ58L2eVFf63ERei9eZaaXXs"
+datausecommunity.com.	86400	IN	NS	ns10.digicertdns.com.
+datausecommunity.com.	86400	IN	NS	ns11.digicertdns.com.
+datausecommunity.com.	86400	IN	NS	ns12.digicertdns.com.
+datausecommunity.com.	86400	IN	NS	ns13.digicertdns.net.
+datausecommunity.com.	86400	IN	NS	ns14.digicertdns.net.
+datausecommunity.com.	86400	IN	NS	ns15.digicertdns.net.
+datausecommunity.com.	1800	IN	A	50.116.51.233
+datausecommunity.com.	86400	IN	MX	1 aspmx.l.google.com.
+datausecommunity.com.	86400	IN	MX	5 alt1.aspmx.l.google.com.
+datausecommunity.com.	86400	IN	MX	5 alt2.aspmx.l.google.com.
+datausecommunity.com.	86400	IN	MX	10 alt3.aspmx.l.google.com.
+datausecommunity.com.	86400	IN	MX	10 alt4.aspmx.l.google.com.
+forum.datausecommunity.com. 1800 IN	CNAME	datausecommunity.com.
+www.datausecommunity.com. 1800	IN	CNAME	datausecommunity.com.
+datausecommunity.com.	86400	IN	SOA	ns10.digicertdns.com. dns.digicertdns.com. 2009010112 43200 3600 1209600 180
+
+;datausecommunity.org
+datausecommunity.org.	86400	IN	SOA	ns0.dnsmadeeasy.com. dns.dnsmadeeasy.com. 2008010143 43200 3600 1209600 180
+datausecommunity.org.	86400	IN	TXT	"v=spf1 a mx include:_spf.mlsend.com ?all"
+datausecommunity.org.	86400	IN	TXT	"google-site-verification=D4UyHvMOoV9wYg1g7zkkSCEwcY7t7CYtyrMCe-Bh_X4"
+datausecommunity.org.	86400	IN	NS	ns0.dnsmadeeasy.com.
+datausecommunity.org.	86400	IN	NS	ns1.dnsmadeeasy.com.
+datausecommunity.org.	86400	IN	NS	ns2.dnsmadeeasy.com.
+datausecommunity.org.	86400	IN	NS	ns3.dnsmadeeasy.com.
+datausecommunity.org.	86400	IN	NS	ns4.dnsmadeeasy.com.
+datausecommunity.org.	86400	IN	A	50.116.51.233
+datausecommunity.org.	86400	IN	MX	1 aspmx.l.google.com.
+datausecommunity.org.	86400	IN	MX	5 alt1.aspmx.l.google.com.
+datausecommunity.org.	86400	IN	MX	5 alt2.aspmx.l.google.com.
+datausecommunity.org.	86400	IN	MX	10 alt3.aspmx.l.google.com.
+datausecommunity.org.	86400	IN	MX	10 alt4.aspmx.l.google.com.
+ml._domainkey.datausecommunity.org. 86400 IN TXT "k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC9h3MLay4y/wWAXhxeTaSD/S3Siq7N5FaVXfcoexINZCTRiK+Gk52oo4felM/BsJL+dYrlnQkZdfoUCjqE62Hq4gB+n6/B6Su76W0iJbGVhFo3etEzpkvZUI8IPvdzK007W3iscFYJKYFtFKAOGMamEgn5a0KZjNlBfVFxRsa8NwIDAQAB"
+forum.datausecommunity.org. 86400 IN	CNAME	datausecommunity.org.
+mg.datausecommunity.org. 86400	IN	TXT	"v=spf1 include:mailgun.org ~all"
+mg.datausecommunity.org. 86400	IN	MX	10 mxa.mailgun.org.
+mg.datausecommunity.org. 86400	IN	MX	10 mxb.mailgun.org.
+mx._domainkey.mg.datausecommunity.org. 86400 IN	TXT "k=rsa; " "p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsS2mfOhAR1lkEfMQbOUVrsX4qSQozksnxgYlgnDkgLxi22F8TbExXOrI2bd9MoEVf9cdRpF/wU0G3TYGJgoaPdSyFmclrn+lnpoc0SWqqglBbY7QErbHPwCXaK4lo3EkX/6qXa5Cai2neBWz1GZAMGeR+r+RmTg7p5BTDB9gzG0Hi4H80OigRAgf3cAwlps8Tw8SPRqjBZRTSNfBO" "aesnHtqnlXeleoz/Ka4FyMa5znf38CDYg/hVC6rQF8ry+bKuQbfZCUp53vb8071igxNoekAyIqIFGduwEJv6gx8OX/zFhKJzIOK4ZX6c+VI3YhOy0FFW7moD8v4yeb5ykkRcwIDAQAB"
+email.mg.datausecommunity.org. 86400 IN	CNAME	mailgun.org.
+ml.datausecommunity.org. 86400	IN	MX	10 mx.mlsrv.io.
+ml.datausecommunity.org. 86400	IN	TXT	"v=spf1 a mx include:_spf.mlsend.com ?all"
+ml.datausecommunity.org. 86400	IN	A	35.198.93.67
+tmp.datausecommunity.org. 86400	IN	CNAME	datausecommunity.org.
+www.datausecommunity.org. 86400	IN	CNAME	datausecommunity.org.
+datausecommunity.org.	86400	IN	SOA	ns0.dnsmadeeasy.com. dns.dnsmadeeasy.com. 2008010143 43200 3600 1209600 180
+
+;ehpkn.org
+ehpkn.org.		86400	IN	SOA	ns10.digicertdns.com. dns.digicertdns.com. 2009010105 43200 3600 1209600 180
+ehpkn.org.		86400	IN	NS	ns10.digicertdns.com.
+ehpkn.org.		86400	IN	NS	ns11.digicertdns.com.
+ehpkn.org.		86400	IN	NS	ns12.digicertdns.com.
+ehpkn.org.		86400	IN	NS	ns13.digicertdns.net.
+ehpkn.org.		86400	IN	NS	ns14.digicertdns.net.
+ehpkn.org.		86400	IN	NS	ns15.digicertdns.net.
+ehpkn.org.		3600	IN	MX	0 smtp.secureserver.net.
+ehpkn.org.		3600	IN	MX	10 mailstore1.secureserver.net.
+ehpkn.org.		86400	IN	SOA	ns10.digicertdns.com. dns.digicertdns.com. 2009010105 43200 3600 1209600 180
+
+;facilityregistry.org
+facilityregistry.org.	86400	IN	SOA	ns0.dnsmadeeasy.com. dns.dnsmadeeasy.com. 2008010110 43200 3600 1209600 180
+facilityregistry.org.	86400	IN	NS	ns0.dnsmadeeasy.com.
+facilityregistry.org.	86400	IN	NS	ns1.dnsmadeeasy.com.
+facilityregistry.org.	86400	IN	NS	ns2.dnsmadeeasy.com.
+facilityregistry.org.	86400	IN	NS	ns3.dnsmadeeasy.com.
+facilityregistry.org.	86400	IN	NS	ns4.dnsmadeeasy.com.
+facilityregistry.org.	3600	IN	A	192.30.252.153
+facilityregistry.org.	3600	IN	A	192.30.252.154
+facilityregistry.org.	86400	IN	SOA	ns0.dnsmadeeasy.com. dns.dnsmadeeasy.com. 2008010110 43200 3600 1209600 180
+
+;ohie.net
+ohie.net.		86400	IN	SOA	ns0.dnsmadeeasy.com. dns.dnsmadeeasy.com. 2008010115 43200 3600 1209600 180
+ohie.net.		86400	IN	NS	ns0.dnsmadeeasy.com.
+ohie.net.		86400	IN	NS	ns1.dnsmadeeasy.com.
+ohie.net.		86400	IN	NS	ns2.dnsmadeeasy.com.
+ohie.net.		86400	IN	NS	ns3.dnsmadeeasy.com.
+ohie.net.		86400	IN	NS	ns4.dnsmadeeasy.com.
+ohie.net.		86400	IN	A	96.45.82.18
+ohie.net.		86400	IN	A	96.45.82.164
+ohie.net.		86400	IN	A	96.45.83.97
+ohie.net.		86400	IN	A	96.45.83.159
+datim.ohie.net.		86400	IN	A	96.45.82.18
+datim.ohie.net.		86400	IN	A	96.45.82.164
+datim.ohie.net.		86400	IN	A	96.45.83.97
+datim.ohie.net.		86400	IN	A	96.45.83.159
+www.ohie.net.		86400	IN	A	96.45.82.18
+www.ohie.net.		86400	IN	A	96.45.82.164
+www.ohie.net.		86400	IN	A	96.45.83.97
+www.ohie.net.		86400	IN	A	96.45.83.159
+ohie.net.		86400	IN	SOA	ns0.dnsmadeeasy.com. dns.dnsmadeeasy.com. 2008010115 43200 3600 1209600 180
+
+;ohie.org
+ohie.org.		86400	IN	SOA	ns0.dnsmadeeasy.com. dns.dnsmadeeasy.com. 2008010491 43200 3600 1209600 180
+ohie.org.		360	IN	TXT	"v=spf1 include:mailgun.org include:_spf.mlsend.com include:spf.mandrillapp.com include:_spf.google.com ?all"
+ohie.org.		3600	IN	MX	0 smtp.secureserver.net.
+ohie.org.		3600	IN	MX	10 mailstore1.secureserver.net.
+ohie.org.		3600	IN	A	45.56.119.139
+ohie.org.		86400	IN	NS	ns0.dnsmadeeasy.com.
+ohie.org.		86400	IN	NS	ns1.dnsmadeeasy.com.
+ohie.org.		86400	IN	NS	ns2.dnsmadeeasy.com.
+ohie.org.		86400	IN	NS	ns3.dnsmadeeasy.com.
+ohie.org.		86400	IN	NS	ns4.dnsmadeeasy.com.
+1s3._domainkey.ohie.org. 1800	IN	CNAME	wl700809s3.domainkey.freshemail.io.
+mandrill._domainkey.ohie.org. 3600 IN	TXT	"v=DKIM1; k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCrLHiExVd55zd/IQ/J/mRwSRMAocV/hMB3jXwaHH36d9NaVynQFYV8NaWi69c1veUtRzGt7yAioXqLj7Z4TeEUoOLgrKsn8YnckGs9i3B3tVFB+Ch/4mPhXWiNfNdynHWBcPcbJ8kjEQ2U8y78dHZj1YeRXXVvWob2OaKynO8/lQIDAQAB;"
+nv1og._domainkey.ohie.org. 1800	IN	CNAME	wl700809s2.domainkey.freshemail.io.
+zkons._domainkey.ohie.org. 1800	IN	CNAME	wl700809s1.domainkey.freshemail.io.
+_tcp.ohie.org.		360	IN	SRV	100 1 5061 sipfed.online.lync.com.
+_tls.ohie.org.		360	IN	SRV	100 1 443 sipdir.online.lync.com.
+academy.ohie.org.	1800	IN	MX	10 mxa.mailgun.org.
+academy.ohie.org.	1800	IN	MX	10 mxb.mailgun.org.
+academy.ohie.org.	1800	IN	TXT	"v=spf1 include:mailgun.org ~all"
+academy.ohie.org.	1800	IN	A	45.33.90.93
+smtp._domainkey.academy.ohie.org. 1800 IN TXT	"k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCmyaP1b327mVOy0GRxJY/FYPUCN26Wdp9HVaFS2Z2u3bLPk4uyJcWmPqeffaXkCb2SjmIo+NwBwLujNHkrZI/d2XGEE5Qsw6Z5dbCk9+miW3U0ArxUlTtr+LcFGjZSgu8/ku2tM0hcMHtku6nXkTsNj2S2GB5vTZKUhkQhYWQ8GwIDAQAB"
+email.academy.ohie.org.	1800	IN	CNAME	mailgun.org.
+backup.ohie.org.	3600	IN	A	162.216.226.23
+butare.ohie.org.	3600	IN	A	45.56.117.170
+ci.ohie.org.		3600	IN	A	76.164.236.226
+crowd.ohie.org.		1800	IN	A	66.228.33.238
+csd.ohie.org.		3600	IN	CNAME	ec2-54-228-84-178.eu-west-1.compute.amazonaws.com.
+dash.ohie.org.		3600	IN	CNAME	wordpress.ohie.org.
+datim.ohie.org.		3600	IN	A	96.45.82.18
+datim.ohie.org.		3600	IN	A	96.45.82.164
+datim.ohie.org.		3600	IN	A	96.45.83.97
+datim.ohie.org.		3600	IN	A	96.45.83.159
+datim-test.ohie.org.	10	IN	A	162.243.204.206
+datim4u-install.ohie.org. 1800	IN	A	174.138.38.197
+datim4u-newinstall.ohie.org. 1800 IN	A	162.243.172.177
+datim4u-test-docbuilder.ohie.org. 1800 IN A	198.199.78.130
+datim4uold2.ohie.org.	1800	IN	A	174.138.50.231
+datim4uscripttest.ohie.org. 1800 IN	A	192.241.153.103
+demo.ohie.org.		1800	IN	A	96.45.82.18
+demo.ohie.org.		1800	IN	A	96.45.82.164
+demo.ohie.org.		1800	IN	A	96.45.83.97
+demo.ohie.org.		1800	IN	A	96.45.83.159
+cr.demo.ohie.org.	3600	IN	A	76.164.216.12
+fr.demo.ohie.org.	3600	IN	A	76.164.222.69
+hwr.demo.ohie.org.	3600	IN	A	76.164.222.68
+iol.demo.ohie.org.	3600	IN	A	76.164.222.67
+poc.demo.ohie.org.	3600	IN	A	76.164.216.11
+pr.demo.ohie.org.	3600	IN	A	76.164.222.68
+shr.demo.ohie.org.	3600	IN	A	76.164.216.14
+ts.demo.ohie.org.	3600	IN	A	76.164.216.13
+dev.ohie.org.		3600	IN	A	76.164.222.70
+cr.dev.ohie.org.	3600	IN	A	76.164.236.229
+fr.dev.ohie.org.	3600	IN	A	76.164.236.234
+hmis.dev.ohie.org.	3600	IN	A	76.164.236.235
+hwr.dev.ohie.org.	3600	IN	A	76.164.236.233
+iol.dev.ohie.org.	3600	IN	A	76.164.236.230
+poc.dev.ohie.org.	3600	IN	A	76.164.236.228
+shr.dev.ohie.org.	3600	IN	A	76.164.236.231
+ts.dev.ohie.org.	3600	IN	A	76.164.236.232
+discourse.ohie.org.	1800	IN	TXT	"v=spf1 include:mailgun.org ~all"
+discourse.ohie.org.	1800	IN	MX	10 mxa.mailgun.org.
+discourse.ohie.org.	1800	IN	MX	10 mxb.mailgun.org.
+discourse.ohie.org.	1800	IN	A	23.92.29.183
+krs._domainkey.discourse.ohie.org. 1800	IN TXT	"k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDTK3KS7RKWjAcLUtklqZMJMOC/Z1vxdkD30VH51n0B1mX9lRoAHXxmzCJNXwZhq4uS7p/eBhomlZxvXDpauFGMWh9Gc0WtHBMv9ZXwOzHS07FK/vbjrGIuCpyaNtYGEvHkHIcQMamPBBghDemRG9wTJBpkdzlTr/CmJm6fj5wnkwIDAQAB"
+email.discourse.ohie.org. 1800	IN	CNAME	mailgun.org.
+dtest.ohie.org.		3600	IN	A	45.79.192.101
+duc.ohie.org.		3600	IN	MX	1 aspmx.l.google.com.
+duc.ohie.org.		3600	IN	MX	5 alt1.aspmx.l.google.com.
+duc.ohie.org.		3600	IN	MX	5 alt2.aspmx.l.google.com.
+duc.ohie.org.		3600	IN	MX	10 alt3.aspmx.l.google.com.
+duc.ohie.org.		3600	IN	MX	10 alt4.aspmx.l.google.com.
+duc.ohie.org.		3600	IN	TXT	"v=spf1 include:_spf.mlsend.com include:_spf.google.com ~all"
+google._domainkey.duc.ohie.org.	3600 IN	TXT	"v=DKIM1; k=rsa; " "p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA9a2ALiRM0URa5uVxKrxu2zyyIEwfPbW0xM20rCdT+BEPC7nfbZR5h+W8PG61YbyVO3FPTAgeNQQeNpAJ0Gnouv852E7DbIB/VCjrMgFJ0qVPhzV2TbnpGxxzkyMysQsrOYO3MqXy/z0ExoRDZvw57+3WT2W0ou6Fx9bnZ4D8YOXLJeJZTNAqi4Y5+fycv7K87C0OVEYkx/JYUq4I7" "pgLU12Abn3ocELntmdr+7j7sncFf8iqJn6FoNR5pRzFIR4bai+Pw3IUUgUS8qzFqRVB0FMWsiyxns2b89R2T8fp5lPspFZSNMDbWJXIAo3CIRUIcClpbNn9JSkVJ/e8fgwYvwIDAQAB"
+ml._domainkey.duc.ohie.org. 3600 IN	TXT	"k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDi4sunufRtetqU/JYWNkwV0KOvwO7RP/qyg3ME9s3VQc2s9dEzFF6hpco8DNXOwdU7v1nEuNaTA0NM9NY/OEaa0fq+RyXJe5Zhniqi+IijqbPcZz7z0GNrlB4AK6XvEtpOlZizinExtL58lYUqRYuDzOnUDLdgteRVv1Wj311dpwIDAQAB"
+zoho._domainkey.duc.ohie.org. 360 IN	TXT	"v=DKIM1; k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCyhPrRAV5PqFZmg3FbQ6Yq5OZZSCsrK7rXznIrMzRs2/gZHtiyZwFyJ+o32yOVgoqaNHo45AN1ic7SlmeYujFN3zi/ExyZaXeRiFozkAulqmdEwLYC78EA6/6VnoMAHQjqmA8UH/ZyYLoKFfJBs9qRFZaKyhT6/rqqeEayhzenfwIDAQAB"
+discourse.duc.ohie.org.	3600	IN	TXT	"v=spf1 include:mailgun.org ~all"
+discourse.duc.ohie.org.	3600	IN	MX	10 mxa.mailgun.org.
+discourse.duc.ohie.org.	3600	IN	MX	10 mxb.mailgun.org.
+discourse.duc.ohie.org.	1800	IN	A	50.116.51.233
+mailo._domainkey.discourse.duc.ohie.org. 3600 IN TXT "k=rsa; " "p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuSgZm1QXuAasGlZIychmVA7q3ir42FNtOFPPpnCXATz6tAPhXk5AXHbUAZz+YS6ViCAeVfHB5qB4arCnCrN/UnJeejmOq3AMlLz8Kpg4njXEBFVgFntfuVjhn6R9TSq0Vu+ekkTRr5oy2e7EzngVCpaMk37EU29eJRGYUr4VSyOV0giw80nXWCfwqcLneyBx98MGVkT2jm2EmDiQR" "dT7+w0KbQWZMT8fUxcs9TGpjn+wqJaOpODLkIV9A3U6spBjPfuCbiK5DCVom7SDtP5hXoIE/H/n3i0rVMQmvPvc2QLq0zht6JM2yCtS7tE7+gYU/60Pd0D3VTHlBoLDk3bpMwIDAQAB"
+email.discourse.duc.ohie.org. 3600 IN	CNAME	mailgun.org.
+email.ohie.org.		360	IN	CNAME	email.secureserver.net.
+cert.eval.ohie.org.	100	IN	A	165.227.127.183
+fwdkim1.ohie.org.	1800	IN	CNAME	spfmx1.domainkey.freshemail.io.
+guides.ohie.org.	1800	IN	CNAME	hosting.gitbook.io.
+id.ohie.org.		60	IN	CNAME	prod-tools-1.ohie.org.
+id-new.ohie.org.	1800	IN	CNAME	prod-tools-1.ohie.org.
+id2.ohie.org.		3600	IN	A	45.79.176.44
+install-ohie.ohie.org.	1800	IN	A	159.203.73.126
+issues.ohie.org.	3600	IN	CNAME	muhanga.ohie.org.
+kigali.ohie.org.	3600	IN	A	76.164.216.10
+ldap.ohie.org.		1800	IN	A	45.33.95.56
+metadata.ohie.org.	300	IN	A	96.45.82.18
+metadata.ohie.org.	300	IN	A	96.45.82.164
+metadata.ohie.org.	300	IN	A	96.45.83.97
+metadata.ohie.org.	300	IN	A	96.45.83.159
+mg.ohie.org.		86400	IN	TXT	"v=spf1 include:mailgun.org ~all"
+mg.ohie.org.		3600	IN	MX	10 mxa.mailgun.org.
+mg.ohie.org.		3600	IN	MX	10 mxb.mailgun.org.
+smtp._domainkey.mg.ohie.org. 86400 IN	TXT	"k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC14Pw9LKWY9aY+wuavN3IIdOHO121BuFa2It3m9oTVfpvgYHlo/bZteMzjmV/HOqrsEMbB/L2Rj5MdnwKj16lPyBzYIpvy8Y8ZH+kM9l3nqimzmnxYnzntk7fRyq4NJbR46q9LVb7n2iofYX/ww7WobSseJUb4hLuUx5Ggt3oo+QIDAQAB"
+email.mg.ohie.org.	3600	IN	CNAME	mailgun.org.
+muhanga.ohie.org.	3600	IN	A	66.228.37.46
+munyaga.ohie.org.	3600	IN	A	45.79.176.44
+musanze.ohie.org.	3600	IN	A	63.142.244.88
+musha.ohie.org.		3600	IN	A	173.255.234.101
+new.ohie.org.		300	IN	A	45.56.119.139
+next.ohie.org.		360	IN	CNAME	ohie.org.
+node10.ohie.org.	3600	IN	A	142.222.17.34
+www.node10.ohie.org.	3600	IN	A	142.222.17.34
+notes.ohie.org.		3600	IN	CNAME	wordpress.ohie.org.
+notes-old.ohie.org.	3600	IN	A	50.116.52.158
+ocl-mediator-trial.ohie.org. 1800 IN	A	165.227.114.236
+ocldocker-trail.ohie.org. 1800	IN	A	45.55.237.197
+ohie24.ohie.org.	1800	IN	CNAME	backstage.cs.zohohost.com.
+old.ohie.org.		3600	IN	A	45.56.119.139
+olddemo.ohie.org.	3600	IN	A	76.164.222.70
+oldnotes.ohie.org.	3600	IN	A	192.73.236.206
+nv1og._domainkey.ohie.org.ohie.org. 1800 IN CNAME wl700809s2.domainkey.freshemail.io.
+packages.ohie.org.	3600	IN	CNAME	wordpress.ohie.org.
+prod-tools-1.ohie.org.	1800	IN	A	66.175.211.172
+cr.sandbox.ohie.org.	3600	IN	A	76.164.222.73
+fr.sandbox.ohie.org.	3600	IN	A	76.164.222.77
+hmis.sandbox.ohie.org.	3600	IN	A	76.164.236.227
+hwr.sandbox.ohie.org.	3600	IN	A	76.164.222.76
+iol.sandbox.ohie.org.	3600	IN	A	76.164.222.74
+poc.sandbox.ohie.org.	3600	IN	A	76.164.222.72
+pr.sandbox.ohie.org.	3600	IN	A	76.164.222.76
+shr.sandbox.ohie.org.	3600	IN	A	76.164.222.78
+shr-stg.sandbox.ohie.org. 3600	IN	A	76.164.222.71
+ts.sandbox.ohie.org.	3600	IN	A	76.164.222.75
+sshdemopassby.ohie.org.	3600	IN	A	76.164.222.70
+sshpassby.ohie.org.	3600	IN	A	70.32.71.130
+sso.ohie.org.		1800	IN	CNAME	prod-tools-1.ohie.org.
+sso-new.ohie.org.	1800	IN	CNAME	prod-tools-1.ohie.org.
+talk.ohie.org.		1800	IN	A	96.45.82.18
+talk.ohie.org.		1800	IN	A	96.45.82.164
+talk.ohie.org.		1800	IN	A	96.45.83.97
+talk.ohie.org.		1800	IN	A	96.45.83.159
+cr2.test.ohie.org.	3600	IN	A	63.142.244.88
+crlin.test.ohie.org.	3600	IN	A	76.164.222.73
+crwin.test.ohie.org.	3600	IN	A	23.249.225.129
+fr.test.ohie.org.	3600	IN	A	76.164.222.77
+fr2.test.ohie.org.	3600	IN	A	76.164.236.236
+hmis.test.ohie.org.	3600	IN	A	76.164.236.227
+hwr.test.ohie.org.	3600	IN	A	76.164.222.76
+iol.test.ohie.org.	3600	IN	A	76.164.222.74
+poc.test.ohie.org.	3600	IN	A	76.164.222.72
+shr.test.ohie.org.	3600	IN	A	76.164.222.78
+ts.test.ohie.org.	3600	IN	A	76.164.222.75
+test-server.ohie.org.	60	IN	A	45.33.75.172
+testencrypt.ohie.org.	3600	IN	A	104.236.31.143
+testmap.ohie.org.	60	IN	A	45.55.63.121
+testnode23.ohie.org.	3600	IN	A	104.131.5.148
+www.testnode23.ohie.org. 3600	IN	A	104.131.5.148
+testnode25.ohie.org.	3600	IN	A	45.55.61.66
+www.testnode25.ohie.org. 3600	IN	A	45.55.61.66
+testnodedemo.ohie.org.	3600	IN	A	45.55.50.187
+testnodedemo.ohie.org.	3600	IN	A	162.243.85.47
+www.testnodedemo.ohie.org. 3600	IN	A	45.55.50.187
+tmp.ohie.org.		3600	IN	CNAME	wordpress.ohie.org.
+wiki.ohie.org.		1800	IN	CNAME	prod-tools-1.ohie.org.
+wiki-dev.ohie.org.	360	IN	A	45.56.107.116
+wiki-new.ohie.org.	1800	IN	CNAME	prod-tools-1.ohie.org.
+wiki-old.ohie.org.	300	IN	A	173.255.234.143
+wiki2.ohie.org.		300	IN	A	66.175.211.172
+wordpress.ohie.org.	1800	IN	A	45.56.119.139
+www.ohie.org.		1800	IN	CNAME	ohie.org.
+ohie.org.		86400	IN	SOA	ns0.dnsmadeeasy.com. dns.dnsmadeeasy.com. 2008010491 43200 3600 1209600 180
+
+;openhie.me
+openhie.me.		86400	IN	SOA	ns0.dnsmadeeasy.com. dns.dnsmadeeasy.com. 2008010111 43200 3600 1209600 180
+openhie.me.		86400	IN	NS	ns0.dnsmadeeasy.com.
+openhie.me.		86400	IN	NS	ns1.dnsmadeeasy.com.
+openhie.me.		86400	IN	NS	ns2.dnsmadeeasy.com.
+openhie.me.		86400	IN	NS	ns3.dnsmadeeasy.com.
+openhie.me.		86400	IN	NS	ns4.dnsmadeeasy.com.
+openhie.me.		3600	IN	A	96.45.82.18
+openhie.me.		3600	IN	A	96.45.82.164
+openhie.me.		3600	IN	A	96.45.83.97
+openhie.me.		3600	IN	A	96.45.83.159
+www.openhie.me.		3600	IN	A	96.45.82.18
+www.openhie.me.		3600	IN	A	96.45.82.164
+www.openhie.me.		3600	IN	A	96.45.83.97
+www.openhie.me.		3600	IN	A	96.45.83.159
+openhie.me.		86400	IN	SOA	ns0.dnsmadeeasy.com. dns.dnsmadeeasy.com. 2008010111 43200 3600 1209600 180
+
