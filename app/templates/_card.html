@@ -19,7 +19,11 @@
     </div>
     <div class="card-funder">{{ p.funder }}</div>
     {% if p.url %}
-    <span class="card-url-icon" title="Open opportunity link" onclick="event.stopPropagation(); window.open(this.dataset.url, '_blank')" data-url="{{ p.url }}">🔗</span>
+    <span class="card-url-icon" title="Open opportunity link"
+          role="link" tabindex="0"
+          data-url="{{ p.url }}"
+          onclick="event.preventDefault(); event.stopPropagation(); window.open(this.dataset.url, '_blank', 'noopener,noreferrer')"
+          onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); event.stopPropagation(); window.open(this.dataset.url, '_blank', 'noopener,noreferrer')}">🔗</span>
     {% endif %}
     {% if p.no_go_reason %}
     <div class="card-reason">{{ p.no_go_reason|linkify }}</div>

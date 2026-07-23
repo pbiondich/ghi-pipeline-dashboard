@@ -21,21 +21,58 @@ from fastapi.templating import Jinja2Templates
 from .proposal_loader import load_proposals, get_proposal_by_slug, group_by_status, update_proposal_status, STATUS_ORDER, ACTIVE_STATUSES, STATUS_LABELS, STATUS_EMOJI
 
 # ── URL linkification ──────────────────────────────────────────────
-# Match bare http/https URLs not already inside markdown link syntax [text](url)
-_BARE_URL_RE = re.compile(r'(?<!\()(https?://[^\s\)"<>`]+)(?![\)])')
+# Match bare http/https URLs. Trailing sentence punctuation is kept outside
+# the link. Applied only to text nodes outside existing <a> tags so we never
+# double-link href attributes or already-linked anchors.
+_BARE_URL_RE = re.compile(
+    r'(https?://[^\s<>\"\'`]+?)'  # URL body (lazy)
+    r'([.,;:!?)\]]*)'            # optional trailing punctuation (kept outside)
+    r'(?=\s|<|$|"|\')'           # boundary
+)
+_HTML_TOKEN_RE = re.compile(r'(<[^>]+>)', re.IGNORECASE)
+_A_OPEN_RE = re.compile(r'<a\b', re.IGNORECASE)
+_A_CLOSE_RE = re.compile(r'</a\s*>', re.IGNORECASE)
+
 
 def linkify(text) -> str:
-    """Convert bare URLs in text to clickable HTML links.
+    """Convert bare URLs in text/HTML to clickable links.
 
-    Returns a Markup object (safe for Jinja2 rendering without escaping).
+    Safe on already-rendered markdown HTML: skips tag interiors and any text
+    already inside an <a>...</a> so links are not double-wrapped.
+    Returns Markup for Jinja2.
     """
     if not text:
         return text
-    result = _BARE_URL_RE.sub(
-        r'<a href="\1" target="_blank" rel="noopener noreferrer">\1</a>',
-        str(text),
-    )
-    return Markup(result)
+
+    def _link_text_node(node: str) -> str:
+        def _sub(m: re.Match) -> str:
+            url, trail = m.group(1), m.group(2)
+            # Drop trailing sentence punctuation that snuck into the URL body
+            while url and url[-1] in '.,;:!?':
+                trail = url[-1] + trail
+                url = url[:-1]
+            if not url:
+                return m.group(0)
+            return (
+                f'<a href="{url}" target="_blank" rel="noopener noreferrer">'
+                f'{url}</a>{trail}'
+            )
+
+        return _BARE_URL_RE.sub(_sub, node)
+
+    parts = _HTML_TOKEN_RE.split(str(text))
+    out = []
+    in_anchor = 0
+    for part in parts:
+        if part.startswith('<'):
+            if _A_OPEN_RE.match(part) and not part.startswith('</'):
+                in_anchor += 1
+            elif _A_CLOSE_RE.match(part):
+                in_anchor = max(0, in_anchor - 1)
+            out.append(part)
+        else:
+            out.append(part if in_anchor else _link_text_node(part))
+    return Markup(''.join(out))
 
 
 logging.basicConfig(level=logging.INFO)
@@ -100,7 +137,7 @@ async def dashboard(request: Request):
     proposals = _get_proposals()
     groups = group_by_status(proposals)
     total_active = sum(len(groups[s]) for s in ACTIVE_STATUSES)
-    total_archived = sum(len(groups[s]) for s in ["no-go", "rejected"])
+    total_archived = sum(len(groups[s]) for s in ["rejected"])
     return templates.TemplateResponse(
         request,
         "dashboard.html",

@@ -27,8 +27,9 @@ STATUS_ORDER = [
     "rejected",
 ]
 
-# Active statuses shown on the main board (no-go and rejected are hidden in archive)
-ACTIVE_STATUSES = ["watching", "drafting", "submitted", "under_review", "approved", "funded"]
+# Active statuses shown on the main board (rejected is hidden in archive)
+# no-go is visible as a column so the team can move cards there directly.
+ACTIVE_STATUSES = ["watching", "drafting", "no-go", "submitted", "under_review", "approved", "funded"]
 
 STATUS_LABELS = {
     "watching": "Watching",

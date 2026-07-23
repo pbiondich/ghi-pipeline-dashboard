@@ -47,7 +47,7 @@
             <span class="header-count">{{ total_archived }} proposal{{ 's' if total_archived != 1 }}</span>
         </div>
         <div class="archive-grid">
-            {% for status in ['no-go', 'rejected'] %}
+            {% for status in ['rejected'] %}
             {% set proposals = groups[status] %}
             {% if proposals %}
             <div class="archive-group">
