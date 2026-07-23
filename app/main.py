@@ -126,6 +126,23 @@ _templates_dir = Path(__file__).parent / "templates"
 templates = Jinja2Templates(directory=str(_templates_dir))
 templates.env.filters["linkify"] = linkify
 
+# Cache-bust token for /static/* (mtime of style.css). Forces CF/Safari to
+# pick up CSS after deploys instead of serving a 4h HIT of the previous build.
+def _static_version() -> str:
+    try:
+        return str(int((_static_dir / "style.css").stat().st_mtime))
+    except OSError:
+        return "1"
+
+
+@app.middleware("http")
+async def short_cache_static(request: Request, call_next):
+    """Prefer revalidation for static assets so deploys aren't stuck behind CF."""
+    response = await call_next(request)
+    if request.url.path.startswith("/static/"):
+        response.headers["Cache-Control"] = "public, max-age=300, must-revalidate"
+    return response
+
 
 def _get_proposals():
     """Load proposals fresh on each request (live from synced files)."""
@@ -152,6 +169,7 @@ async def dashboard(request: Request):
             "STATUS_LABELS": STATUS_LABELS,
             "STATUS_EMOJI": STATUS_EMOJI,
             "today": date.today,
+            "static_v": _static_version(),
         },
     )
 
@@ -219,6 +237,7 @@ async def proposal_detail(request: Request, slug: str):
             "STATUS_LABELS": STATUS_LABELS,
             "STATUS_EMOJI": STATUS_EMOJI,
             "today": date.today,
+            "static_v": _static_version(),
         },
     )
 

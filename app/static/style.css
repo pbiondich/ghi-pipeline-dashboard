@@ -717,10 +717,8 @@ a:hover { color: var(--accent-hover); }
     margin: 0 auto;
     padding: 24px;
 }
+/* Class-only hide. Do not rely on [hidden] — Safari + CF-stale CSS fought that path. */
 .archive-section.archive-hidden {
-    display: none !important;
-}
-.archive-section[hidden] {
     display: none !important;
 }
 a.archive-card {

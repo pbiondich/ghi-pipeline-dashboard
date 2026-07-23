@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GHI Pipeline Dashboard</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/style.css?v={{ static_v }}">
 </head>
 <body>
     <header class="header">
@@ -14,7 +14,7 @@
                 <span class="header-count">{{ total_active }} active</span>
             </div>
             <div class="header-meta">
-                <button class="archive-toggle" id="archiveBtn" onclick="toggleArchive()" aria-expanded="false" aria-controls="archiveSection">
+                <button type="button" class="archive-toggle" id="archiveBtn" aria-expanded="false" aria-controls="archiveSection">
                     Show closed ({{ total_archived }})
                 </button>
                 <a href="/api/proposals" class="api-link">API</a>
@@ -40,8 +40,9 @@
         {% endfor %}
     </main>
 
-    <!-- Archived section (hidden by default) -->
-    <div class="archive-section archive-hidden" id="archiveSection" hidden>
+    <!-- Archived section (hidden by default). Use class + inline display — not the
+         HTML hidden attribute — so Safari reliably shows/hides on toggle. -->
+    <div class="archive-section archive-hidden" id="archiveSection" style="display: none;" aria-hidden="true">
         <div class="archive-header">
             <h2>Closed</h2>
             <span class="header-count">{{ total_archived }} proposal{{ 's' if total_archived != 1 }}</span>
@@ -254,27 +255,56 @@
         document.querySelectorAll('.archive-menu.show').forEach(m => m.classList.remove('show'));
     });
 
-    // Toggle archive section (closed = no-go + not funded)
-    function toggleArchive() {
+    // Toggle closed section — Safari-safe: class + explicit style.display,
+    // no HTML hidden attribute, type=button + addEventListener (not inline onclick).
+    var CLOSED_COUNT = {{ total_archived }};
+
+    function setClosedVisible(show) {
         var section = document.getElementById('archiveSection');
         var btn = document.getElementById('archiveBtn');
         if (!section || !btn) return;
-        var isHidden = section.classList.contains('archive-hidden') || section.hasAttribute('hidden');
-        if (isHidden) {
+        if (show) {
             section.classList.remove('archive-hidden');
-            section.removeAttribute('hidden');
-            section.style.display = '';
+            section.style.display = 'block';
+            section.setAttribute('aria-hidden', 'false');
             btn.textContent = 'Hide closed';
             btn.setAttribute('aria-expanded', 'true');
         } else {
             section.classList.add('archive-hidden');
-            section.setAttribute('hidden', '');
-            section.style.display = '';
-            var count = {{ total_archived }};
-            btn.textContent = 'Show closed (' + count + ')';
+            section.style.display = 'none';
+            section.setAttribute('aria-hidden', 'true');
+            btn.textContent = 'Show closed (' + CLOSED_COUNT + ')';
             btn.setAttribute('aria-expanded', 'false');
         }
     }
+
+    function toggleArchive(event) {
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        var section = document.getElementById('archiveSection');
+        if (!section) return;
+        // Visible only when class is off AND display is block
+        var isVisible = !section.classList.contains('archive-hidden') &&
+            section.style.display === 'block';
+        setClosedVisible(!isVisible);
+    }
+
+    // Prefer addEventListener — more reliable in Safari than inline onclick
+    (function wireArchiveToggle() {
+        function bind() {
+            var btn = document.getElementById('archiveBtn');
+            if (!btn || btn.dataset.bound === '1') return;
+            btn.dataset.bound = '1';
+            btn.addEventListener('click', toggleArchive, false);
+        }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', bind);
+        } else {
+            bind();
+        }
+    })();
 
     // Remove drag styling after drag ends
     document.addEventListener('dragend', function() {
