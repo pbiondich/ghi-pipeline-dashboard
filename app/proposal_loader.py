@@ -14,8 +14,8 @@ import frontmatter
 logger = logging.getLogger(__name__)
 
 # Pipeline status order (MUST match Grant's canonical ordering)
-# no-go sits between drafting and submitted — the go/no-go decision point.
-# rejected is a hidden terminal status (hidden from default board view).
+# no-go = team decided not to pursue; rejected = funder declined / not funded.
+# Both are terminal "closed" states hidden from the default board (Show closed).
 STATUS_ORDER = [
     "watching",
     "drafting",
@@ -27,9 +27,11 @@ STATUS_ORDER = [
     "rejected",
 ]
 
-# Active statuses shown on the main board (rejected is hidden in archive)
-# no-go is visible as a column so the team can move cards there directly.
-ACTIVE_STATUSES = ["watching", "drafting", "no-go", "submitted", "under_review", "approved", "funded"]
+# Active statuses on the main board. Closed (no-go + rejected) live in archive.
+ACTIVE_STATUSES = ["watching", "drafting", "submitted", "under_review", "approved", "funded"]
+
+# Terminal statuses shown only when "Show closed" is toggled on.
+ARCHIVED_STATUSES = ["no-go", "rejected"]
 
 STATUS_LABELS = {
     "watching": "Watching",
@@ -39,7 +41,7 @@ STATUS_LABELS = {
     "approved": "Approved",
     "funded": "Funded",
     "no-go": "No-Go",
-    "rejected": "Rejected",
+    "rejected": "Not Funded",
 }
 
 STATUS_EMOJI = {
@@ -86,9 +88,30 @@ class Proposal:
     def _normalize_status(status) -> str:
         if not status:
             return "watching"
-        s = str(status).strip().lower()
-        if s in STATUS_ORDER:
-            return s
+        raw = str(status).strip().lower()
+        # Collapse spaces/hyphens/underscores for alias lookup
+        key = raw.replace(" ", "_").replace("-", "_")
+        aliases = {
+            "no_go": "no-go",
+            "nogo": "no-go",
+            "not_funded": "rejected",
+            "notfunded": "rejected",
+            "declined": "rejected",
+            "unsuccessful": "rejected",
+            "closed": "no-go",  # team closed without funder decision → no-go
+            "archive": "no-go",
+            "archived": "no-go",
+            "under_review": "under_review",
+        }
+        if key in aliases:
+            return aliases[key]
+        if raw in STATUS_ORDER:
+            return raw
+        if key in STATUS_ORDER:
+            return key
+        for candidate in STATUS_ORDER:
+            if candidate.replace("-", "_") == key:
+                return candidate
         return "watching"
 
     @staticmethod

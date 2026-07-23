@@ -14,7 +14,7 @@
                 <span class="header-count">{{ total_active }} active</span>
             </div>
             <div class="header-meta">
-                <button class="archive-toggle" id="archiveBtn" onclick="toggleArchive()">
+                <button class="archive-toggle" id="archiveBtn" onclick="toggleArchive()" aria-expanded="false" aria-controls="archiveSection">
                     Show closed ({{ total_archived }})
                 </button>
                 <a href="/api/proposals" class="api-link">API</a>
@@ -41,13 +41,13 @@
     </main>
 
     <!-- Archived section (hidden by default) -->
-    <div class="archive-section archive-hidden" id="archiveSection">
+    <div class="archive-section archive-hidden" id="archiveSection" hidden>
         <div class="archive-header">
             <h2>Closed</h2>
             <span class="header-count">{{ total_archived }} proposal{{ 's' if total_archived != 1 }}</span>
         </div>
         <div class="archive-grid">
-            {% for status in ['rejected'] %}
+            {% for status in ARCHIVED_STATUSES %}
             {% set proposals = groups[status] %}
             {% if proposals %}
             <div class="archive-group">
@@ -57,7 +57,7 @@
                     <span class="column-count">{{ proposals|length }}</span>
                 </div>
                 {% for p in proposals %}
-                <div class="archive-card">
+                <a href="/proposal/{{ p.url_slug }}" class="archive-card">
                     <div class="card-header">
                         <h3 class="card-title">{{ p.name }}</h3>
                         {% if p.fit_rating %}
@@ -74,7 +74,7 @@
                         <span class="meta-item">Closed {{ p.updated.strftime('%b %d') }}</span>
                         {% endif %}
                     </div>
-                </div>
+                </a>
                 {% endfor %}
             </div>
             {% endif %}
@@ -83,7 +83,7 @@
     </div>
 
     <footer class="footer">
-        <p>GHI Grant Pipeline · Regenstrief Institute · Drag cards between columns · <span class="footer-hint">Click ⋯ to mark as no-go or rejected</span></p>
+        <p>GHI Grant Pipeline · Regenstrief Institute · Drag cards between columns · <span class="footer-hint">Click ⋯ to mark as no-go or not funded</span></p>
     </footer>
 
     <script>
@@ -254,23 +254,25 @@
         document.querySelectorAll('.archive-menu.show').forEach(m => m.classList.remove('show'));
     });
 
-    // Toggle archive section
+    // Toggle archive section (closed = no-go + not funded)
     function toggleArchive() {
-        console.log('toggleArchive clicked');
         var section = document.getElementById('archiveSection');
         var btn = document.getElementById('archiveBtn');
-        if (!section) { console.log('archiveSection not found'); return; }
-        if (!btn) { console.log('archiveBtn not found'); return; }
-        if (section.style.display === 'none' || section.classList.contains('archive-hidden')) {
+        if (!section || !btn) return;
+        var isHidden = section.classList.contains('archive-hidden') || section.hasAttribute('hidden');
+        if (isHidden) {
             section.classList.remove('archive-hidden');
-            section.style.display = 'block';
-            section.style.border = '3px solid red';
+            section.removeAttribute('hidden');
+            section.style.display = '';
             btn.textContent = 'Hide closed';
+            btn.setAttribute('aria-expanded', 'true');
         } else {
             section.classList.add('archive-hidden');
-            section.style.display = 'none';
-            var count = document.querySelectorAll('.archive-card').length;
+            section.setAttribute('hidden', '');
+            section.style.display = '';
+            var count = {{ total_archived }};
             btn.textContent = 'Show closed (' + count + ')';
+            btn.setAttribute('aria-expanded', 'false');
         }
     }
 

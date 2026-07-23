@@ -18,7 +18,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from .proposal_loader import load_proposals, get_proposal_by_slug, group_by_status, update_proposal_status, STATUS_ORDER, ACTIVE_STATUSES, STATUS_LABELS, STATUS_EMOJI
+from .proposal_loader import load_proposals, get_proposal_by_slug, group_by_status, update_proposal_status, STATUS_ORDER, ACTIVE_STATUSES, ARCHIVED_STATUSES, STATUS_LABELS, STATUS_EMOJI
 
 # ── URL linkification ──────────────────────────────────────────────
 # Match bare http/https URLs. Trailing sentence punctuation is kept outside
@@ -137,7 +137,7 @@ async def dashboard(request: Request):
     proposals = _get_proposals()
     groups = group_by_status(proposals)
     total_active = sum(len(groups[s]) for s in ACTIVE_STATUSES)
-    total_archived = sum(len(groups[s]) for s in ["rejected"])
+    total_archived = sum(len(groups[s]) for s in ARCHIVED_STATUSES)
     return templates.TemplateResponse(
         request,
         "dashboard.html",
@@ -147,6 +147,7 @@ async def dashboard(request: Request):
             "total_active": total_active,
             "total_archived": total_archived,
             "ACTIVE_STATUSES": ACTIVE_STATUSES,
+            "ARCHIVED_STATUSES": ARCHIVED_STATUSES,
             "STATUS_ORDER": STATUS_ORDER,
             "STATUS_LABELS": STATUS_LABELS,
             "STATUS_EMOJI": STATUS_EMOJI,

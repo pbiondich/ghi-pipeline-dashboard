@@ -718,7 +718,19 @@ a:hover { color: var(--accent-hover); }
     padding: 24px;
 }
 .archive-section.archive-hidden {
-    display: none;
+    display: none !important;
+}
+.archive-section[hidden] {
+    display: none !important;
+}
+a.archive-card {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
+}
+a.archive-card:hover {
+    border-color: var(--accent);
 }
 
 .archive-header {
