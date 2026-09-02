@@ -88,7 +88,7 @@ a:hover { color: var(--accent-hover); }
 }
 
 .header-inner {
-    max-width: 1560px;
+    max-width: none;
     margin: 0 auto;
     padding: 14px 24px;
     display: flex;
@@ -187,9 +187,9 @@ a:hover { color: var(--accent-hover); }
 
 /* === Banners / due rail === */
 .banner {
-    max-width: 1560px;
+    max-width: none;
     margin: 12px auto 0;
-    padding: 10px 16px;
+    padding: 10px 24px;
     border-radius: var(--radius-sm);
 }
 .banner-warn {
@@ -203,7 +203,7 @@ a:hover { color: var(--accent-hover); }
     background: var(--surface);
 }
 .due-rail-inner {
-    max-width: 1560px;
+    max-width: none;
     margin: 0 auto;
     padding: 14px 24px 16px;
 }
@@ -229,8 +229,13 @@ a:hover { color: var(--accent-hover); }
     display: flex;
     gap: 8px;
     overflow-x: auto;
-    padding-bottom: 4px;
-    scrollbar-width: thin;
+    padding-bottom: 8px;
+    scrollbar-width: auto;
+}
+.due-rail-list::-webkit-scrollbar { height: 10px; }
+.due-rail-list::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 5px;
 }
 .due-chip {
     flex: 0 0 auto;
@@ -263,7 +268,7 @@ a:hover { color: var(--accent-hover); }
 .due-chip.deadline-soon { border-color: #edd4a4; background: #fff7e8; }
 
 .filter-status {
-    max-width: 1560px;
+    max-width: none;
     margin: 10px auto 0;
     padding: 0 24px;
     font-size: 13px;
@@ -271,29 +276,40 @@ a:hover { color: var(--accent-hover); }
 }
 
 /* === Pipeline Board === */
+/* Scroll the full viewport, not a 1560px box — six lanes do not fit in 1560,
+   so Funded was always clipped and widening the window only added margin. */
+.pipeline-scroll {
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: visible;
+    padding-bottom: 8px;
+    scrollbar-width: auto;
+    scrollbar-color: var(--border) transparent;
+}
+.pipeline-scroll::-webkit-scrollbar { height: 12px; }
+.pipeline-scroll::-webkit-scrollbar-thumb {
+    background: #c4bba8;
+    border-radius: 6px;
+}
+
 .pipeline {
-    max-width: 1560px;
-    margin: 0 auto;
-    padding: 20px 24px 32px;
+    max-width: none;
+    width: max(100%, min-content);
+    min-width: min-content;
+    margin: 0;
+    padding: 20px 32px 32px 24px;
     display: flex;
     gap: 14px;
     min-height: calc(100vh - 180px);
-    overflow-x: auto;
-    scroll-behavior: smooth;
-    scroll-snap-type: x proximity;
-    scrollbar-width: thin;
-    scrollbar-color: var(--border) transparent;
-}
-.pipeline::-webkit-scrollbar { height: 6px; }
-.pipeline::-webkit-scrollbar-thumb {
-    background: var(--border);
-    border-radius: 3px;
+    overflow: visible;
+    scroll-snap-type: none;
+    box-sizing: border-box;
 }
 
 .column {
-    min-width: 268px;
-    max-width: 320px;
-    flex: 1;
+    flex: 1 1 230px;
+    min-width: 230px;
+    max-width: 360px;
     scroll-snap-align: start;
 }
 
@@ -349,13 +365,24 @@ a:hover { color: var(--accent-hover); }
 }
 
 .column-empty {
-    min-width: 148px;
-    max-width: 168px;
-    flex: 0 0 148px;
+    min-width: 104px;
+    max-width: 120px;
+    flex: 0 0 104px;
 }
 .column-empty .column-cards {
     border: 2px dashed var(--border);
     border-radius: var(--radius);
+}
+.column-empty.drag-over {
+    flex: 1 1 230px;
+    min-width: 230px;
+    max-width: 360px;
+}
+
+/* Approved is unused in the vault. Keep it as a drop target while dragging,
+   but don't spend a lane on it in front of Funded. */
+body:not(.is-dragging) .column-empty[data-status="approved"] {
+    display: none;
 }
 
 /* === Cards === */
@@ -586,7 +613,7 @@ a:hover { color: var(--accent-hover); }
 
 /* === Archive section === */
 .archive-section {
-    max-width: 1560px;
+    max-width: none;
     margin: 0 auto 40px;
     padding: 0 24px 24px;
 }
@@ -812,16 +839,23 @@ a.archive-card:hover {
     }
     .header-meta { flex-wrap: wrap; }
     .board-search { width: 100%; }
+    .pipeline-scroll {
+        overflow-x: auto;
+    }
     .pipeline {
         flex-direction: row;
-        overflow-x: auto;
+        overflow: visible;
         padding: 16px;
-        scroll-snap-type: x mandatory;
+        min-width: min-content;
+        width: max-content;
     }
     .column {
         min-width: min(86vw, 320px);
         max-width: min(86vw, 320px);
         flex: 0 0 auto;
+    }
+    body:not(.is-dragging) .column-empty[data-status="approved"] {
+        display: none;
     }
     .detail {
         grid-template-columns: 1fr;

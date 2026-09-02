@@ -72,6 +72,8 @@ class BoardAppTests(unittest.TestCase):
         r = self.client.get("/")
         self.assertIn('id="boardSearch"', r.text)
         self.assertIn("/static/board.js", r.text)
+        self.assertIn("pipeline-scroll", r.text)
+        self.assertIn('data-status="funded"', r.text)
 
     def test_funded_card_is_not_a_watchlist(self):
         r = self.client.get("/api/proposals")

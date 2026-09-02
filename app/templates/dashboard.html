@@ -71,6 +71,7 @@
 
     <p class="filter-status" id="filterStatus" hidden></p>
 
+    <div class="pipeline-scroll">
     <main class="pipeline" id="mainPipeline">
         {% for status in ACTIVE_STATUSES %}
         {% set proposals = groups[status] %}
@@ -91,6 +92,7 @@
         </section>
         {% endfor %}
     </main>
+    </div>
 
     <!-- Archived section (hidden by default). Use class + inline display — not the
          HTML hidden attribute — so Safari reliably shows/hides on toggle. -->
