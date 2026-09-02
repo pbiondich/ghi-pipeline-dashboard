@@ -284,6 +284,34 @@ class SurgicalPatchTests(unittest.TestCase):
             one.name, "CDC India — Health Information & Laboratory Systems Strengthening"
         )
 
+    def test_patch_zimam_drafting_to_under_review(self):
+        src = FIXTURES / "proposal-zimam-hie-maturity.md"
+        dest = Path("/tmp/proposal-zimam-hie-maturity.md")
+        dest.write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
+        updated = update_proposal_status("/tmp", "proposal-zimam-hie-maturity", "under_review")
+        self.assertEqual(updated.status, "under_review")
+        self.assertEqual(updated.name, "ZIMAM — HIE Maturity + Data Quality Assessment")
+        text = dest.read_text(encoding="utf-8")
+        self.assertIn("status: under_review", text)
+        self.assertIn("workspace: '[[work]]'", text)
+        self.assertIn("[[organizations/zimam]]", text)
+        self.assertIn("Concept note. Wikilinks", text)
+        self.assertNotIn("---#", text)
+        self.assertRegex(text, r"---\n+# ZIMAM")
+
+    def test_patch_zimam_jordan_preserves_body_thematic_break(self):
+        src = FIXTURES / "proposal-zimam-jordan-training.md"
+        dest = Path("/tmp/proposal-zimam-jordan-training.md")
+        dest.write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
+        updated = update_proposal_status("/tmp", "proposal-zimam-jordan-training", "under_review")
+        self.assertEqual(updated.status, "under_review")
+        text = dest.read_text(encoding="utf-8")
+        self.assertEqual(text.count("status: under_review"), 1)
+        self.assertIn("## From Tolaria (zimam-data-standards-training)", text)
+        self.assertIn("A thematic break in the body", text)
+        self.assertNotIn("---#", text)
+        self.assertRegex(text, r"---\n+# ZIMAM")
+
     def test_patch_no_go_reason_and_clear_on_move(self):
         src = FIXTURES / "proposal-cdc-ghana.md"
         dest = Path("/tmp/ghi-patch-ghana.md")

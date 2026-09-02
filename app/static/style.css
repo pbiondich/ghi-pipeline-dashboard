@@ -373,16 +373,12 @@ a:hover { color: var(--accent-hover); }
     border: 2px dashed var(--border);
     border-radius: var(--radius);
 }
-.column-empty.drag-over {
-    flex: 1 1 0;
-    min-width: 220px;
-    max-width: none;
-    overflow: hidden;
-}
+/* Do not resize empty lanes on drag-over — that reflows the whole board
+   while the card is still in the air. Highlight only. */
 
-/* Approved is unused in the vault. Keep it as a drop target while dragging,
-   but don't spend a lane on it in front of Funded. */
-body:not(.is-dragging) .column-empty[data-status="approved"] {
+/* Approved is unused in the vault. Keep it hidden when empty so Funded
+   stays on screen. Status can still be set from the detail page. */
+.column-empty[data-status="approved"] {
     display: none;
 }
 
@@ -857,7 +853,7 @@ a.archive-card:hover {
         max-width: min(86vw, 320px);
         flex: 0 0 auto;
     }
-    body:not(.is-dragging) .column-empty[data-status="approved"] {
+    .column-empty[data-status="approved"] {
         display: none;
     }
     .detail {

@@ -68,6 +68,28 @@ class BoardAppTests(unittest.TestCase):
         self.assertIn("No bid deadline", r.text)
         self.assertIn("El Salvador", r.text)
 
+    def test_patch_zimam_to_under_review(self):
+        from app import main as app_main
+
+        dest_dir = Path("/tmp/ghi-api-zimam")
+        dest_dir.mkdir(exist_ok=True)
+        src = FIXTURES / "proposal-zimam-hie-maturity.md"
+        (dest_dir / src.name).write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
+        old = app_main.PROPOSALS_DIR
+        app_main.PROPOSALS_DIR = str(dest_dir)
+        try:
+            r = self.client.patch(
+                "/api/proposals/proposal-zimam-hie-maturity",
+                json={"status": "under_review"},
+            )
+            self.assertEqual(r.status_code, 200, r.text)
+            self.assertEqual(r.json()["status"], "under_review")
+            text = (dest_dir / src.name).read_text(encoding="utf-8")
+            self.assertIn("status: under_review", text)
+            self.assertIn("[[work]]", text)
+        finally:
+            app_main.PROPOSALS_DIR = old
+
     def test_filter_control_is_present(self):
         r = self.client.get("/")
         self.assertIn('id="boardSearch"', r.text)

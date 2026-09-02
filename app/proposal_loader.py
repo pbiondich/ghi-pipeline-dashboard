@@ -84,7 +84,7 @@ _NON_PROPOSAL_PREFIXES = ("brief-", "draft-")
 
 # Consecutive opening YAML blocks (ingest stub + vault record). Later keys win.
 _LEADING_FM = re.compile(r"\A---\r?\n(.*?)\r?\n---(?:\r?\n)*", re.DOTALL)
-_FM_BLOCK = re.compile(r"\A(---\r?\n)(.*?)(\r?\n---)", re.DOTALL)
+_FM_BLOCK = re.compile(r"\A(---\r?\n)(.*?)(\r?\n---(?:[ \t]*\r?\n)?)", re.DOTALL)
 
 
 @dataclass
@@ -589,7 +589,22 @@ def get_proposal_by_slug(proposals: list, slug: str) -> Optional[Proposal]:
     return None
 
 
+def _slug_matches(stored: str, filename: str, slug: str) -> bool:
+    if not slug:
+        return False
+    if stored == slug or stored.endswith("/" + slug) or filename.replace(".md", "") == slug:
+        return True
+    if "/" in stored and stored.rsplit("/", 1)[-1] == slug:
+        return True
+    return False
+
+
 def _find_proposal_file(proposals_dir: Path, slug: str) -> Optional[Path]:
+    slug = (slug or "").strip()
+    if slug.endswith(".md"):
+        slug = slug[:-3]
+    if "/" in slug:
+        slug = slug.rsplit("/", 1)[-1]
     filepath = proposals_dir / f"{slug}.md"
     if filepath.exists():
         return filepath
@@ -600,8 +615,9 @@ def _find_proposal_file(proposals_dir: Path, slug: str) -> Optional[Path]:
         try:
             with open(f, encoding="utf-8") as fh:
                 post = frontmatter.load(fh)
-            stored = str(post.get("slug", ""))
-            if stored == slug or stored.endswith("/" + slug) or f.name.replace(".md", "") == slug:
+            meta, _body = _absorb_extra_frontmatter(dict(post.metadata), post.content)
+            stored = str(meta.get("slug") or post.get("slug") or "")
+            if _slug_matches(stored, f.name, slug):
                 return f
         except Exception:
             continue
@@ -656,8 +672,24 @@ def _surgical_status_patch(text: str, new_status: str, reason: str, today: str) 
                 rest = rest[ws.end() :]
         match = _FM_BLOCK.match(rest)
         if not match:
+            rest = lead + rest
             break
-        block = _patch_frontmatter_fields(match.group(2), new_status, reason, today)
+        raw_block = match.group(2)
+        # A markdown thematic break (`---`) is not a second frontmatter block.
+        # Only keep patching when the fence parses as YAML with real keys.
+        if patched:
+            try:
+                extra = frontmatter.loads("---\n" + raw_block + "\n---\n")
+                extra_meta = dict(extra.metadata or {})
+            except Exception:
+                rest = lead + rest
+                break
+            if not extra_meta or not any(
+                k in extra_meta for k in ("status", "name", "type", "title", "slug")
+            ):
+                rest = lead + rest
+                break
+        block = _patch_frontmatter_fields(raw_block, new_status, reason, today)
         out.append(lead + match.group(1) + block + match.group(3))
         rest = rest[match.end() :]
         patched += 1
@@ -693,12 +725,20 @@ def update_proposal_status(
 
     try:
         original = filepath.read_text(encoding="utf-8")
+        if original.startswith("\ufeff"):
+            original = original.lstrip("\ufeff")
         patched = _surgical_status_patch(
             original, canonical, reason, date.today().isoformat()
         )
-        filepath.write_text(patched, encoding="utf-8")
+        tmp = filepath.with_name(filepath.name + ".tmp")
+        tmp.write_text(patched, encoding="utf-8")
+        tmp.replace(filepath)
     except RuntimeError:
         raise
+    except PermissionError as e:
+        raise RuntimeError(
+            f"Vault file {filepath.name} is not writable. Status was not saved."
+        ) from e
     except Exception as e:
         raise RuntimeError(f"Failed to update proposal {filepath.name}: {e}") from e
 

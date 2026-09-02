@@ -4,6 +4,23 @@
 
     var draggedCard = null;
 
+    function freezeLaneWidths(freeze) {
+        document.querySelectorAll('.pipeline .column').forEach(function (col) {
+            if (freeze) {
+                var w = Math.round(col.getBoundingClientRect().width);
+                col.style.flex = '0 0 ' + w + 'px';
+                col.style.width = w + 'px';
+                col.style.minWidth = w + 'px';
+                col.style.maxWidth = w + 'px';
+            } else {
+                col.style.flex = '';
+                col.style.width = '';
+                col.style.minWidth = '';
+                col.style.maxWidth = '';
+            }
+        });
+    }
+
     function showToast(message, ok) {
         var el = document.getElementById('toast');
         if (!el) return;
@@ -19,10 +36,10 @@
     window.onDragStart = function (event) {
         draggedCard = event.target.closest('.card');
         if (!draggedCard) return;
+        freezeLaneWidths(true);
         event.dataTransfer.effectAllowed = 'move';
         event.dataTransfer.setData('text/plain', draggedCard.dataset.slug);
         draggedCard.classList.add('dragging');
-        document.body.classList.add('is-dragging');
     };
 
     window.onDragOver = function (event) {
@@ -44,46 +61,63 @@
         });
 
         var column = event.target.closest('.column');
-        if (!column || !draggedCard) return;
+        if (!column || !draggedCard) {
+            freezeLaneWidths(false);
+            return;
+        }
 
         var newStatus = column.dataset.status;
         var oldStatus = draggedCard.dataset.status;
         var slug = draggedCard.dataset.slug;
 
-        if (newStatus === oldStatus) return;
+        if (newStatus === oldStatus) {
+            freezeLaneWidths(false);
+            return;
+        }
 
         var reason = '';
         if (newStatus === 'no-go') {
             reason = prompt('Why is this a no-go? (Optional)');
             if (reason === null) {
+                freezeLaneWidths(false);
                 draggedCard = null;
                 return;
             }
         }
 
+        var card = draggedCard;
         var targetCards = column.querySelector('.column-cards');
         var emptyHint = targetCards.querySelector('.column-empty-hint');
         if (emptyHint) emptyHint.remove();
-        targetCards.appendChild(draggedCard);
-        draggedCard.dataset.status = newStatus;
+        targetCards.appendChild(card);
+        card.dataset.status = newStatus;
         updateColumnCounts();
 
-        fetch('/api/proposals/' + slug, {
+        fetch('/api/proposals/' + encodeURIComponent(slug), {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ status: newStatus, reason: reason })
         })
             .then(function (response) {
-                if (!response.ok) {
-                    moveCardBack(draggedCard, oldStatus);
-                    showToast('Could not write status back to the vault.', false);
-                } else {
+                if (response.ok) {
                     showToast('Status written back to the vault.', true);
+                    return;
                 }
+                return response.json().then(function (err) {
+                    var detail = err && err.detail ? String(err.detail) : '';
+                    moveCardBack(card, oldStatus);
+                    showToast(detail || 'Could not write status back to the vault.', false);
+                }).catch(function () {
+                    moveCardBack(card, oldStatus);
+                    showToast('Could not write status back to the vault.', false);
+                });
             })
             .catch(function () {
-                moveCardBack(draggedCard, oldStatus);
+                moveCardBack(card, oldStatus);
                 showToast('Network error. Card moved back.', false);
+            })
+            .finally(function () {
+                freezeLaneWidths(false);
             });
 
         draggedCard = null;
@@ -122,7 +156,7 @@
         updateColumnCounts();
         updateTotalActive();
 
-        fetch('/api/proposals/' + slug, {
+        fetch('/api/proposals/' + encodeURIComponent(slug), {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ status: status, reason: reason })
@@ -247,7 +281,7 @@
         document.querySelectorAll('.dragging, .drag-over').forEach(function (el) {
             el.classList.remove('dragging', 'drag-over');
         });
-        document.body.classList.remove('is-dragging');
+        freezeLaneWidths(false);
         draggedCard = null;
     });
 
