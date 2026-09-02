@@ -97,6 +97,22 @@ class BoardAppTests(unittest.TestCase):
         self.assertIn("pipeline-scroll", r.text)
         self.assertIn('data-status="funded"', r.text)
 
+    def test_watchlist_card_meta_wraps_instead_of_truncating(self):
+        r = self.client.get("/")
+        self.assertEqual(r.status_code, 200)
+        body = r.text
+        gpn = body[body.find("World Bank — El Salvador") : body.find("World Bank — El Salvador") + 2500]
+        self.assertIn("GPN published 20 Jan 2026. No bid deadline. Specific REOIs will post later.", gpn)
+        self.assertIn("$120M", gpn)
+        self.assertIn("meta-item note deadline deadline-none", gpn)
+        self.assertIn("WB OP00419896 / P506486 — General Procurement Notice", gpn)
+        css = self.client.get("/static/style.css")
+        self.assertEqual(css.status_code, 200)
+        self.assertIn(".card-meta", css.text)
+        self.assertIn("flex-wrap: wrap", css.text)
+        self.assertIn(".meta-item.amount", css.text)
+        self.assertNotIn(".meta-item {\n    color: var(--text-secondary);\n    white-space: nowrap;\n}", css.text)
+
     def test_funded_card_is_not_a_watchlist(self):
         r = self.client.get("/api/proposals")
         funded = next(p for p in r.json() if p["status"] == "funded")

@@ -385,6 +385,8 @@ a:hover { color: var(--accent-hover); }
 /* === Cards === */
 .card {
     position: relative;
+    min-width: 0;
+    max-width: 100%;
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius);
@@ -413,6 +415,8 @@ a:hover { color: var(--accent-hover); }
 
 .card-body {
     display: block;
+    min-width: 0;
+    overflow: hidden;
     padding: 14px 16px 14px 18px;
     text-decoration: none;
     color: inherit;
@@ -484,14 +488,33 @@ a:hover { color: var(--accent-hover); }
 
 .card-meta {
     display: flex;
-    align-items: center;
-    gap: 12px;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 10px;
     margin-top: 4px;
     font-size: 12px;
+    min-width: 0;
 }
 
 .meta-item {
     color: var(--text-secondary);
+    min-width: 0;
+}
+
+.meta-item.deadline:not(.deadline-none) {
+    white-space: nowrap;
+}
+
+.meta-item.deadline-none,
+.meta-item.note {
+    flex: 1 1 8rem;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.meta-item.amount {
+    flex: 0 0 auto;
     white-space: nowrap;
 }
 
@@ -500,6 +523,12 @@ a:hover { color: var(--accent-hover); }
     color: var(--text-tertiary);
     margin-top: 8px;
     line-height: 1.35;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
 .card-tags {
