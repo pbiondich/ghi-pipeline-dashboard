@@ -85,6 +85,8 @@ _NON_PROPOSAL_PREFIXES = ("brief-", "draft-")
 # Consecutive opening YAML blocks (ingest stub + vault record). Later keys win.
 _LEADING_FM = re.compile(r"\A---\r?\n(.*?)\r?\n---(?:\r?\n)*", re.DOTALL)
 _FM_BLOCK = re.compile(r"\A(---\r?\n)(.*?)(\r?\n---(?:[ \t]*\r?\n)?)", re.DOTALL)
+# Bad PATCH ate the newline after the closing fence: `---# Heading`
+_GLUED_CLOSE = re.compile(r"(---)[ \t]*(#{1,6}\s)")
 
 
 @dataclass
@@ -506,6 +508,25 @@ class Proposal:
         }
 
 
+def _repair_glued_frontmatter_fence(text: str) -> str:
+    """Restore a newline when a PATCH glued `---` to the following heading."""
+    if not text:
+        return text
+    return _GLUED_CLOSE.sub(r"\1\n\n\2", text, count=1)
+
+
+def _read_proposal_markdown(fpath: Path) -> tuple:
+    """Read a proposal file, repairing a glued closing fence if needed.
+
+    Returns (raw_or_repaired_text, was_repaired).
+    """
+    raw = fpath.read_text(encoding="utf-8")
+    if raw.startswith("\ufeff"):
+        raw = raw.lstrip("\ufeff")
+    repaired = _repair_glued_frontmatter_fence(raw)
+    return repaired, repaired != raw
+
+
 def _absorb_extra_frontmatter(meta: dict, content: str) -> tuple:
     """Merge extra leading YAML blocks left in the body after the first fence.
 
@@ -557,9 +578,8 @@ def load_proposals_report(proposals_dir: str) -> LoadReport:
 
     for fpath in sorted(path.glob("*.md")):
         try:
-            with open(fpath, "r", encoding="utf-8") as f:
-                post = frontmatter.load(f)
-
+            text, healed = _read_proposal_markdown(fpath)
+            post = frontmatter.loads(text)
             meta, body = _absorb_extra_frontmatter(dict(post.metadata), post.content)
             if not _is_board_proposal(fpath, meta):
                 report.skipped += 1
@@ -567,9 +587,15 @@ def load_proposals_report(proposals_dir: str) -> LoadReport:
 
             proposal = Proposal(meta, body, str(fpath), fpath.name)
             report.proposals.append(proposal)
+            if healed:
+                try:
+                    fpath.write_text(text, encoding="utf-8")
+                    logger.warning("Repaired glued frontmatter fence in %s", fpath.name)
+                except OSError as write_err:
+                    logger.warning("Could not write repaired %s: %s", fpath.name, write_err)
         except Exception as e:
             logger.error("Error loading %s: %s", fpath.name, e)
-            report.errors.append(f"{fpath.name}: {e}")
+            report.errors.append(fpath.name)
 
     return report
 
@@ -724,9 +750,7 @@ def update_proposal_status(
         raise FileNotFoundError(f"No proposal found for slug: {slug}")
 
     try:
-        original = filepath.read_text(encoding="utf-8")
-        if original.startswith("\ufeff"):
-            original = original.lstrip("\ufeff")
+        original, _healed = _read_proposal_markdown(filepath)
         patched = _surgical_status_patch(
             original, canonical, reason, date.today().isoformat()
         )

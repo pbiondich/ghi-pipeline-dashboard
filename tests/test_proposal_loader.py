@@ -39,6 +39,24 @@ class LoadFilterTests(unittest.TestCase):
         self.assertTrue(report.missing_dir)
         self.assertEqual(report.proposals, [])
 
+    def test_glued_frontmatter_fence_is_repaired_and_loaded(self):
+        dest_dir = Path("/tmp/ghi-glued-fence")
+        dest_dir.mkdir(exist_ok=True)
+        dest = dest_dir / "proposal-zimam-jordan-glued.md"
+        dest.write_text(
+            FIXTURES.joinpath("proposal-zimam-jordan-training.md")
+            .read_text(encoding="utf-8")
+            .replace("---\n\n# ZIMAM", "---# ZIMAM"),
+            encoding="utf-8",
+        )
+        report = load_proposals_report(str(dest_dir))
+        self.assertEqual(report.errors, [])
+        names = {p.name for p in report.proposals}
+        self.assertIn("ZIMAM — Jordan Data Standards Training", names)
+        healed = dest.read_text(encoding="utf-8")
+        self.assertNotIn("---#", healed)
+        self.assertRegex(healed, r"---\n+# ZIMAM")
+
 
 class FieldWiringTests(unittest.TestCase):
     def setUp(self):
