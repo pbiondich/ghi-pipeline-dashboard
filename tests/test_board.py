@@ -31,8 +31,14 @@ class BoardAppTests(unittest.TestCase):
         self.assertIn("GPN · watchlist", body)
         self.assertIn("WHO — Data, analytics", body)
         self.assertIn("Ghana", body)
-        self.assertIn("CDC India — Health Information & Laboratory Systems Strengthening", body)
+        self.assertIn("CDC India — Health Information", body)
         self.assertNotIn("Untitled Proposal", body)
+        self.assertIn("Forecast", body)
+        self.assertIn("2027", body)
+        self.assertIn("CSA", body)
+        rail = body.split('id="mainPipeline"', 1)[0]
+        self.assertIn("Needs a look", rail)
+        self.assertNotIn("EDCTP3", rail)
         self.assertNotIn("Positioning Brief", body)
         self.assertNotIn("Palladium — Data.FI Subcontract Concept Note", body)
         low = body.lower()
@@ -71,13 +77,12 @@ class BoardAppTests(unittest.TestCase):
         funded = next(p for p in r.json() if p["status"] == "funded")
         self.assertFalse(funded["is_watchlist"])
         board = self.client.get("/").text
-        # GPN watchlist copy stays; funded cards must not use it.
-        self.assertIn("Watch for a notice", board)
         funded_idx = board.find("Global Fund DHIA")
         self.assertGreater(funded_idx, 0)
         snippet = board[funded_idx : funded_idx + 800]
         self.assertNotIn("Watch for a notice", snippet)
         self.assertNotIn("No deadline", snippet)
+        self.assertNotIn("card-watchlist", snippet)
 
 
 if __name__ == "__main__":
