@@ -1,0 +1,68 @@
+"""HTTP-level checks against fixture vault data."""
+
+import os
+import unittest
+from pathlib import Path
+
+from fastapi.testclient import TestClient
+
+FIXTURES = Path(__file__).parent / "fixtures"
+
+
+class BoardAppTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        os.environ["PROPOSALS_DIR"] = str(FIXTURES)
+        # Import after env so the app module binds the fixture directory.
+        from app import main as app_main
+
+        app_main.PROPOSALS_DIR = str(FIXTURES)
+        app_main.BRAIN_DIR = str(FIXTURES.parent)
+        cls.client = TestClient(app_main.app)
+
+    def test_board_renders_live_and_watchlist_cards(self):
+        r = self.client.get("/")
+        self.assertEqual(r.status_code, 200)
+        body = r.text
+        self.assertIn("Win pipeline", body)
+        self.assertIn("Due in 30 days", body)
+        self.assertIn("World Bank — El Salvador", body)
+        self.assertIn("GPN · watchlist", body)
+        self.assertIn("WHO — Data, analytics", body)
+        self.assertIn("Ghana", body)
+        self.assertNotIn("Positioning Brief", body)
+        self.assertNotIn("Palladium — Data.FI Subcontract Concept Note", body)
+        low = body.lower()
+        self.assertNotIn("custody", low)
+        self.assertNotIn("child support", low)
+
+    def test_brief_and_draft_are_not_in_api(self):
+        r = self.client.get("/api/proposals")
+        self.assertEqual(r.status_code, 200)
+        names = {p["name"] for p in r.json()}
+        self.assertNotIn("Positioning Brief — UNICEF PHIT Phase 2", names)
+        self.assertIn("World Bank — El Salvador Improving Health Care (P506486 GPN)", names)
+        gpn = next(p for p in r.json() if p["is_gpn"])
+        self.assertTrue(gpn["is_watchlist"])
+        self.assertIsNone(gpn["deadline"])
+
+    def test_hyphenated_status_in_under_review_column(self):
+        r = self.client.get("/")
+        self.assertIn('data-status="under_review"', r.text)
+        self.assertIn("AWS — OCL Modernization", r.text)
+
+    def test_detail_shows_deadline_note_without_date(self):
+        r = self.client.get("/proposal/proposal-wb-gpn")
+        self.assertEqual(r.status_code, 200)
+        self.assertIn("GPN · no bid window yet", r.text)
+        self.assertIn("No bid deadline", r.text)
+        self.assertIn("El Salvador", r.text)
+
+    def test_filter_control_is_present(self):
+        r = self.client.get("/")
+        self.assertIn('id="boardSearch"', r.text)
+        self.assertIn("/static/board.js", r.text)
+
+
+if __name__ == "__main__":
+    unittest.main()

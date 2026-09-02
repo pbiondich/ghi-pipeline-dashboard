@@ -18,7 +18,19 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from .proposal_loader import load_proposals, get_proposal_by_slug, group_by_status, update_proposal_status, STATUS_ORDER, ACTIVE_STATUSES, ARCHIVED_STATUSES, STATUS_LABELS, STATUS_EMOJI
+from .proposal_loader import (
+    load_proposals,
+    load_proposals_report,
+    get_proposal_by_slug,
+    group_by_status,
+    update_proposal_status,
+    due_this_window,
+    STATUS_ORDER,
+    ACTIVE_STATUSES,
+    ARCHIVED_STATUSES,
+    STATUS_LABELS,
+    STATUS_EMOJI,
+)
 
 # ── URL linkification ──────────────────────────────────────────────
 # Match bare http/https URLs. Trailing sentence punctuation is kept outside
@@ -85,11 +97,19 @@ PROPOSALS_DIR = os.environ.get(
 )
 BRAIN_DIR = str(Path(PROPOSALS_DIR).parent)
 
-def _git_commit_push(slug: str, status: str):
+
+def _git_commit_push(slug: str, status: str, file_path: str = ""):
     """Fire-and-forget git commit + push after a status update."""
     try:
+        add_target = ["proposals/*.md"]
+        if file_path:
+            try:
+                rel = str(Path(file_path).resolve().relative_to(Path(BRAIN_DIR).resolve()))
+                add_target = [rel]
+            except ValueError:
+                add_target = [file_path]
         subprocess.run(
-            ["git", "-C", BRAIN_DIR, "add", "proposals/*.md"],
+            ["git", "-C", BRAIN_DIR, "add", "--"] + add_target,
             capture_output=True, timeout=10,
         )
         r = subprocess.run(
@@ -115,6 +135,7 @@ def _git_commit_push(slug: str, status: str):
     except Exception as e:
         logger.warning("Git sync failed for %s: %s", slug, e)
 
+
 app = FastAPI(title="GHI Pipeline Dashboard")
 
 # Mount static files
@@ -129,10 +150,13 @@ templates.env.filters["linkify"] = linkify
 # Cache-bust token for /static/* (mtime of style.css). Forces CF/Safari to
 # pick up CSS after deploys instead of serving a 4h HIT of the previous build.
 def _static_version() -> str:
-    try:
-        return str(int((_static_dir / "style.css").stat().st_mtime))
-    except OSError:
-        return "1"
+    latest = 1
+    for name in ("style.css", "board.js"):
+        try:
+            latest = max(latest, int((_static_dir / name).stat().st_mtime))
+        except OSError:
+            continue
+    return str(latest)
 
 
 @app.middleware("http")
@@ -144,34 +168,45 @@ async def short_cache_static(request: Request, call_next):
     return response
 
 
-def _get_proposals():
+def _get_report():
     """Load proposals fresh on each request (live from synced files)."""
+    return load_proposals_report(PROPOSALS_DIR)
+
+
+def _get_proposals():
     return load_proposals(PROPOSALS_DIR)
+
+
+def _board_context(request: Request) -> dict:
+    report = _get_report()
+    proposals = report.proposals
+    groups = group_by_status(proposals)
+    due = due_this_window(proposals, days=30)
+    total_active = sum(len(groups[s]) for s in ACTIVE_STATUSES)
+    total_archived = sum(len(groups[s]) for s in ARCHIVED_STATUSES)
+    return {
+        "groups": groups,
+        "groups": groups,
+        "total": len(proposals),
+        "total_active": total_active,
+        "total_archived": total_archived,
+        "due_soon": due,
+        "due_overdue": sum(1 for p in due if (p.days_until_deadline or 0) < 0),
+        "vault_missing": report.missing_dir,
+        "load_errors": report.errors,
+        "ACTIVE_STATUSES": ACTIVE_STATUSES,
+        "ARCHIVED_STATUSES": ARCHIVED_STATUSES,
+        "STATUS_ORDER": STATUS_ORDER,
+        "STATUS_LABELS": STATUS_LABELS,
+        "STATUS_EMOJI": STATUS_EMOJI,
+        "today": date.today,
+        "static_v": _static_version(),
+    }
 
 
 @app.get("/", response_class=HTMLResponse)
 async def dashboard(request: Request):
-    proposals = _get_proposals()
-    groups = group_by_status(proposals)
-    total_active = sum(len(groups[s]) for s in ACTIVE_STATUSES)
-    total_archived = sum(len(groups[s]) for s in ARCHIVED_STATUSES)
-    return templates.TemplateResponse(
-        request,
-        "dashboard.html",
-        {
-            "groups": groups,
-            "total": len(proposals),
-            "total_active": total_active,
-            "total_archived": total_archived,
-            "ACTIVE_STATUSES": ACTIVE_STATUSES,
-            "ARCHIVED_STATUSES": ARCHIVED_STATUSES,
-            "STATUS_ORDER": STATUS_ORDER,
-            "STATUS_LABELS": STATUS_LABELS,
-            "STATUS_EMOJI": STATUS_EMOJI,
-            "today": date.today,
-            "static_v": _static_version(),
-        },
-    )
+    return templates.TemplateResponse(request, "dashboard.html", _board_context(request))
 
 
 @app.get("/api/proposals")
@@ -193,17 +228,20 @@ async def api_proposal_detail(slug: str):
 @app.patch("/api/proposals/{slug}")
 async def api_update_proposal(slug: str, body: dict):
     """Update a proposal field (e.g., status) and write back to the brain file."""
-    if "status" not in body:
+    if not isinstance(body, dict) or "status" not in body:
         raise HTTPException(status_code=400, detail="Request body must include 'status' field")
-    
-    new_status = body["status"]
-    reason = body.get("reason", "")
-    
+
+    reason = body.get("reason", "") or ""
+
     try:
-        updated = update_proposal_status(PROPOSALS_DIR, slug, new_status, reason)
-        # Fire-and-forget git sync in background thread
+        # Loader canonicalizes hyphen/underscore aliases and rejects unknowns
+        # so a bad status is never silently rewritten to watching.
+        updated = update_proposal_status(PROPOSALS_DIR, slug, body["status"], reason)
+        new_status = updated.status
         threading.Thread(
-            target=_git_commit_push, args=(slug, new_status), daemon=True
+            target=_git_commit_push,
+            args=(slug, new_status, updated.file_path),
+            daemon=True,
         ).start()
         return updated.to_dict()
     except ValueError as e:

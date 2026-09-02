@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ proposal.name }} — GHI Pipeline</title>
+    <title>{{ proposal.name }} — GHI Win</title>
     <link rel="stylesheet" href="/static/style.css?v={{ static_v }}">
 </head>
 <body>
+    <a class="skip-link" href="#detailMain">Skip to proposal</a>
     <header class="header header-detail">
         <div class="header-inner">
             <div class="header-brand">
@@ -19,11 +20,11 @@
         </div>
     </header>
 
-    <main class="detail">
+    <main class="detail" id="detailMain">
         <div class="detail-sidebar">
             <div class="detail-section">
-                <label>Status</label>
-                <select class="detail-status-select" data-slug="{{ proposal.url_slug }}" onchange="changeStatus(this)">
+                <label for="statusSelect">Status</label>
+                <select id="statusSelect" class="detail-status-select" data-slug="{{ proposal.url_slug }}" onchange="changeStatus(this)">
                     {% for s in STATUS_ORDER %}
                     <option value="{{ s }}" {% if s == proposal.status %}selected{% endif %}>
                         {{ STATUS_EMOJI[s] }} {{ STATUS_LABELS[s] }}
@@ -32,10 +33,12 @@
                 </select>
             </div>
 
+            {% if proposal.funder %}
             <div class="detail-section">
                 <label>Funder</label>
                 <span>{{ proposal.funder|linkify }}</span>
             </div>
+            {% endif %}
 
             {% if proposal.fit_rating %}
             <div class="detail-section">
@@ -51,9 +54,9 @@
             </div>
             {% endif %}
 
-            {% if proposal.deadline %}
             <div class="detail-section">
                 <label>Deadline</label>
+                {% if proposal.deadline %}
                 <span class="deadline-{{ proposal.deadline_status }}">
                     {{ proposal.deadline.strftime('%B %d, %Y') }}
                     {% if proposal.days_until_deadline is not none %}
@@ -62,15 +65,19 @@
                     </span>
                     {% endif %}
                 </span>
+                {% else %}
+                <span class="deadline-none">
+                    {% if proposal.is_gpn %}GPN · no bid window yet{% else %}No deadline{% endif %}
+                </span>
+                {% endif %}
                 {% if proposal.deadline_note %}
                 <span class="deadline-note">{{ proposal.deadline_note }}</span>
                 {% endif %}
             </div>
-            {% endif %}
 
             {% if proposal.region %}
             <div class="detail-section">
-                <label>Region</label>
+                <label>Geography</label>
                 <span>{{ proposal.region }}</span>
             </div>
             {% endif %}
@@ -84,7 +91,7 @@
 
             {% if proposal.url %}
             <div class="detail-section">
-                <label>Opportunity Link</label>
+                <label>Opportunity link</label>
                 <span class="detail-url">{{ proposal.url|linkify }}</span>
             </div>
             {% endif %}
@@ -116,7 +123,7 @@
 
             {% if proposal.no_go_reason %}
             <div class="detail-section">
-                <label>No-Go Reason</label>
+                <label>No-go reason</label>
                 <span class="detail-nogo-reason">{{ proposal.no_go_reason|linkify }}</span>
             </div>
             {% endif %}
@@ -149,17 +156,28 @@
         </article>
     </main>
 
+    <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
     <footer class="footer">
-        <p><a href="/">← Back to Pipeline</a></p>
+        <p><a href="/">← Back to pipeline</a></p>
     </footer>
 
     <script>
+    function showToast(message, ok) {
+        var el = document.getElementById('toast');
+        if (!el) return;
+        el.textContent = message;
+        el.hidden = false;
+        el.classList.toggle('toast-error', !ok);
+        clearTimeout(showToast._t);
+        showToast._t = setTimeout(function() { el.hidden = true; }, 4000);
+    }
+
     function changeStatus(select) {
         const slug = select.dataset.slug;
         const newStatus = select.value;
         const oldValue = select.dataset.oldValue || select.querySelector('option[selected]')?.value;
 
-        // Prompt for reason when changing to no-go
         var reason = '';
         if (newStatus === 'no-go') {
             reason = prompt('Why is this a no-go? (Optional)');
@@ -177,16 +195,16 @@
         .then(response => {
             if (response.ok) {
                 select.dataset.oldValue = newStatus;
-                // Update all matching option elements so the new selection sticks
                 select.querySelectorAll('option').forEach(o => o.removeAttribute('selected'));
                 select.querySelector('option[value="' + newStatus + '"]')?.setAttribute('selected', '');
+                showToast('Status written back to the vault.', true);
             } else {
-                alert('Failed to update status. Try again.');
+                showToast('Could not update status. Vault write failed.', false);
                 select.value = oldValue;
             }
         })
         .catch(() => {
-            alert('Network error. Try again.');
+            showToast('Network error. Status was not saved.', false);
             select.value = oldValue;
         });
     }
