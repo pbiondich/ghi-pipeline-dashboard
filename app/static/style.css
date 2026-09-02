@@ -307,9 +307,9 @@ a:hover { color: var(--accent-hover); }
 }
 
 .column {
-    flex: 1 1 230px;
-    min-width: 230px;
-    max-width: 360px;
+    flex: 1 1 0;
+    min-width: 220px;
+    max-width: none;
     scroll-snap-align: start;
 }
 
@@ -374,9 +374,10 @@ a:hover { color: var(--accent-hover); }
     border-radius: var(--radius);
 }
 .column-empty.drag-over {
-    flex: 1 1 230px;
-    min-width: 230px;
-    max-width: 360px;
+    flex: 1 1 0;
+    min-width: 220px;
+    max-width: none;
+    overflow: hidden;
 }
 
 /* Approved is unused in the vault. Keep it as a drop target while dragging,
@@ -436,6 +437,8 @@ body:not(.is-dragging) .column-empty[data-status="approved"] {
     color: var(--ink);
     flex: 1;
     padding-right: 18px;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 .card-funder {
