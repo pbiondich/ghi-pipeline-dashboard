@@ -82,7 +82,9 @@ _STATUS_ALIASES = {
 _NON_PROPOSAL_TYPES = {"draft", "brief", "reference", "note"}
 _NON_PROPOSAL_PREFIXES = ("brief-", "draft-")
 
-_FRONTMATTER_RE = re.compile(r"\A---\r?\n(.*?)\r?\n---", re.DOTALL)
+# Consecutive opening YAML blocks (ingest stub + vault record). Later keys win.
+_LEADING_FM = re.compile(r"\A---\r?\n(.*?)\r?\n---(?:\r?\n)*", re.DOTALL)
+_FM_BLOCK = re.compile(r"\A(---\r?\n)(.*?)(\r?\n---)", re.DOTALL)
 
 
 @dataclass
@@ -101,7 +103,7 @@ class Proposal:
         self.filename = filename
         self.raw_status = metadata.get("status", "")
         self.slug = metadata.get("slug", filename.replace(".md", ""))
-        self.name = metadata.get("name", "Untitled Proposal")
+        self.name = self._resolve_name(metadata, content, filename)
         self.status = self._normalize_status(metadata.get("status", "watching"))
         self.funder = self._resolve_funder(metadata, self.name)
         self.opportunity = metadata.get("opportunity", "")
@@ -122,7 +124,11 @@ class Proposal:
         )
         self.tags = metadata.get("tags", []) or []
         self.deadline = self._parse_deadline(metadata.get("deadline"))
-        self.deadline_note = metadata.get("deadline_note", "") or ""
+        self.deadline_note = (
+            metadata.get("deadline_note", "")
+            or metadata.get("deadline_notes", "")
+            or ""
+        )
         self.amount_raw = metadata.get("amount")
         self.amount_display = self._format_amount(
             metadata.get("amount"), metadata.get("amount_description", "")
@@ -183,6 +189,23 @@ class Proposal:
         if r in ("high", "medium", "low", "weak"):
             return r
         return ""
+
+    @staticmethod
+    def _resolve_name(metadata: dict, content: str, filename: str) -> str:
+        name = str(metadata.get("name") or "").strip()
+        if name and name != "Untitled Proposal":
+            return name
+        title = str(metadata.get("title") or "").strip()
+        # Skip auto titles like "Proposal Cdc India His Lab"
+        if title and not re.match(r"^proposal\s", title, re.I):
+            return title
+        heading = re.search(r"^#\s+(.+)$", content or "", re.MULTILINE)
+        if heading:
+            return heading.group(1).strip()
+        stem = filename.replace(".md", "")
+        if stem.startswith("proposal-"):
+            stem = stem[len("proposal-"):]
+        return stem.replace("-", " ").title() or "Untitled Proposal"
 
     @staticmethod
     def _resolve_funder(metadata: dict, name: str) -> str:
@@ -324,11 +347,19 @@ class Proposal:
         return (self.deadline - date.today()).days
 
     @property
+    def deadline_is_actionable(self) -> bool:
+        """True when a deadline still means 'do something' (not already sent)."""
+        return self.status in ("watching", "drafting")
+
+    @property
     def deadline_status(self) -> str:
-        """Returns 'urgent', 'soon', 'future', 'past', or 'none'."""
+        """Returns 'urgent', 'soon', 'future', 'past', 'closed', or 'none'."""
         days = self.days_until_deadline
         if days is None:
             return "none"
+        # After the packet leaves the building, the date is history, not urgency.
+        if not self.deadline_is_actionable:
+            return "closed" if days <= 0 else "future"
         if days < 0:
             return "past"
         if days <= 7:
@@ -336,6 +367,39 @@ class Proposal:
         if days <= 30:
             return "soon"
         return "future"
+
+    @property
+    def deadline_stamp(self) -> str:
+        if not self.deadline:
+            return ""
+        if self.deadline.year != date.today().year:
+            return self.deadline.strftime("%b %d, %Y")
+        return self.deadline.strftime("%b %d")
+
+    @property
+    def is_forecast(self) -> bool:
+        hay = " ".join(
+            [
+                str(self.mechanism or ""),
+                str(self.deadline_note or ""),
+                str(self.name or ""),
+                " ".join(str(t) for t in self.tags),
+            ]
+        ).lower()
+        return "forecast" in hay
+
+    @property
+    def region_compact(self) -> str:
+        r = (self.region or "").strip()
+        if not r:
+            return ""
+        if "(" in r:
+            head = r.split("(", 1)[0].strip()
+            if head:
+                r = head
+        if len(r) > 36:
+            return r[:34].rstrip() + "…"
+        return r
 
     @property
     def is_gpn(self) -> bool:
@@ -351,11 +415,13 @@ class Proposal:
 
     @property
     def is_watchlist(self) -> bool:
-        """No bid window yet (typical GPN) — still a first-class card."""
-        return self.deadline is None
+        """No bid window yet on an open card (typical GPN). Funded work is not a watchlist."""
+        return self.deadline is None and self.deadline_is_actionable
 
     @property
     def mechanism_label(self) -> str:
+        if self.is_forecast:
+            return "Forecast"
         if not self.mechanism:
             return "GPN" if self.is_gpn else ""
         m = self.mechanism.strip()
@@ -369,6 +435,8 @@ class Proposal:
             return "LTA"
         if "aps" in low:
             return "APS"
+        if "csa" in low or "coordination and support" in low:
+            return "CSA"
         if "reoi" in low:
             return "REOI"
         if "rfp" in low:
@@ -419,8 +487,11 @@ class Proposal:
             "deadline_note": self.deadline_note,
             "days_until_deadline": self.days_until_deadline,
             "deadline_status": self.deadline_status,
+            "deadline_stamp": self.deadline_stamp,
             "is_watchlist": self.is_watchlist,
             "is_gpn": self.is_gpn,
+            "is_forecast": self.is_forecast,
+            "region_compact": self.region_compact,
             "amount_display": self.amount_display,
             "amount_compact": self.amount_compact,
             "amount_value": self.amount_value,
@@ -435,12 +506,37 @@ class Proposal:
         }
 
 
-def _is_board_proposal(fpath: Path, post: frontmatter.Post) -> bool:
+def _absorb_extra_frontmatter(meta: dict, content: str) -> tuple:
+    """Merge extra leading YAML blocks left in the body after the first fence.
+
+    Some vault files have an ingest stub (`title: Proposal …`, no `name`)
+    followed immediately by the real proposal frontmatter. `frontmatter.load`
+    only sees the first block; later keys override.
+    """
+    merged = dict(meta)
+    rest = content or ""
+    for _ in range(3):
+        match = _LEADING_FM.match(rest)
+        if not match:
+            break
+        try:
+            extra = frontmatter.loads("---\n" + match.group(1) + "\n---\n")
+        except Exception:
+            break
+        extra_meta = dict(extra.metadata or {})
+        if not extra_meta:
+            break
+        merged.update(extra_meta)
+        rest = rest[match.end() :]
+    return merged, rest
+
+
+def _is_board_proposal(fpath: Path, meta: dict) -> bool:
     """Non-proposal vault files (brief-*, draft-*, type: brief/draft) stay off the board."""
     name = fpath.name.lower()
     if name.startswith(_NON_PROPOSAL_PREFIXES):
         return False
-    post_type = str(post.get("type", "")).strip().lower()
+    post_type = str((meta or {}).get("type", "")).strip().lower()
     if post_type in _NON_PROPOSAL_TYPES:
         return False
     # Filename convention is the vault's board-of-record marker.
@@ -464,11 +560,12 @@ def load_proposals_report(proposals_dir: str) -> LoadReport:
             with open(fpath, "r", encoding="utf-8") as f:
                 post = frontmatter.load(f)
 
-            if not _is_board_proposal(fpath, post):
+            meta, body = _absorb_extra_frontmatter(dict(post.metadata), post.content)
+            if not _is_board_proposal(fpath, meta):
                 report.skipped += 1
                 continue
 
-            proposal = Proposal(post.metadata, post.content, str(fpath), fpath.name)
+            proposal = Proposal(meta, body, str(fpath), fpath.name)
             report.proposals.append(proposal)
         except Exception as e:
             logger.error("Error loading %s: %s", fpath.name, e)
@@ -526,13 +623,7 @@ def _remove_yaml_key(block: str, key: str) -> str:
     return pattern.sub("", block, count=1)
 
 
-def _surgical_status_patch(text: str, new_status: str, reason: str, today: str) -> str:
-    """Patch status/updated/no_go_reason inside the opening frontmatter block only."""
-    match = _FRONTMATTER_RE.search(text)
-    if not match:
-        raise RuntimeError("Proposal file has no YAML frontmatter block")
-
-    block = match.group(1)
+def _patch_frontmatter_fields(block: str, new_status: str, reason: str, today: str) -> str:
     block = _set_yaml_scalar(block, "status", new_status)
     block = _set_yaml_scalar(block, "updated", today)
     if new_status == "no-go" and reason:
@@ -544,9 +635,35 @@ def _surgical_status_patch(text: str, new_status: str, reason: str, today: str) 
         block = _set_yaml_scalar(block, "no_go_reason", safe)
     elif new_status != "no-go":
         block = _remove_yaml_key(block, "no_go_reason")
+    return block
 
-    start, end = match.span(1)
-    return text[:start] + block + text[end:]
+
+def _surgical_status_patch(text: str, new_status: str, reason: str, today: str) -> str:
+    """Patch status/updated/no_go_reason in every consecutive leading YAML block.
+
+    Double-frontmatter files (ingest stub + vault record) must stay in sync;
+    a later load merges those blocks and the last `status` wins.
+    """
+    rest = text
+    out = []
+    patched = 0
+    while patched < 4:
+        lead = ""
+        if patched:
+            ws = re.match(r"\A(?:\r?\n)+", rest)
+            if ws:
+                lead = ws.group(0)
+                rest = rest[ws.end() :]
+        match = _FM_BLOCK.match(rest)
+        if not match:
+            break
+        block = _patch_frontmatter_fields(match.group(2), new_status, reason, today)
+        out.append(lead + match.group(1) + block + match.group(3))
+        rest = rest[match.end() :]
+        patched += 1
+    if not patched:
+        raise RuntimeError("Proposal file has no YAML frontmatter block")
+    return "".join(out) + rest
 
 
 def update_proposal_status(
@@ -587,16 +704,24 @@ def update_proposal_status(
 
     with open(filepath, encoding="utf-8") as f:
         post = frontmatter.load(f)
-    return Proposal(post.metadata, post.content, str(filepath), filepath.name)
+    meta, body = _absorb_extra_frontmatter(dict(post.metadata), post.content)
+    return Proposal(meta, body, str(filepath), filepath.name)
 
 
 def due_this_window(proposals: list, days: int = 30) -> list:
-    """Active live bids that are overdue or due within `days`. No-deadline cards excluded."""
+    """Watching/drafting bids that are overdue or due within `days`.
+
+    Submitted / under-review / funded dates are not action items. Forecasts
+    beyond the window stay in their column. GPNs with no deadline are excluded
+    from this rail (they remain on the board).
+    """
     due = []
     for p in proposals:
-        if p.status not in ACTIVE_STATUSES:
+        if not p.deadline_is_actionable:
             continue
         if p.days_until_deadline is None:
+            continue
+        if p.is_forecast and p.days_until_deadline > days:
             continue
         if p.days_until_deadline <= days:
             due.append(p)

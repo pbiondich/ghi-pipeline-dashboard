@@ -39,14 +39,14 @@
     {% endif %}
 
     {% if due_soon %}
-    <section class="due-rail" aria-label="Deadlines in the next 30 days">
+    <section class="due-rail" aria-label="Open bids that need a look">
         <div class="due-rail-inner">
             <div class="due-rail-head">
-                <h2>Due in 30 days</h2>
+                <h2>Needs a look</h2>
                 <p>
-                    {{ due_soon|length }} live bid{{ 's' if due_soon|length != 1 }}
+                    {{ due_soon|length }} watching/drafting
                     {% if due_overdue %} · {{ due_overdue }} overdue{% endif %}
-                    · GPNs without a deadline stay on the board
+                    · overdue or due in 30 days
                 </p>
             </div>
             <div class="due-rail-list">
@@ -117,7 +117,7 @@
                         <span class="fit-badge fit-{{ p.fit_rating }}">{{ p.fit_rating }}</span>
                         {% endif %}
                     </div>
-                    <div class="card-funder">{{ p.funder }}{% if p.region %} · {{ p.region }}{% endif %}</div>
+                    <div class="card-funder">{{ p.funder }}{% if p.region_compact %} · {{ p.region_compact }}{% endif %}</div>
                     {% if p.status == 'no-go' and p.no_go_reason %}
                     <div class="card-reason">{{ p.no_go_reason }}</div>
                     {% endif %}

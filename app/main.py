@@ -186,7 +186,6 @@ def _board_context(request: Request) -> dict:
     total_archived = sum(len(groups[s]) for s in ARCHIVED_STATUSES)
     return {
         "groups": groups,
-        "groups": groups,
         "total": len(proposals),
         "total_active": total_active,
         "total_archived": total_archived,

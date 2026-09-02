@@ -25,11 +25,14 @@ class BoardAppTests(unittest.TestCase):
         self.assertEqual(r.status_code, 200)
         body = r.text
         self.assertIn("Win pipeline", body)
-        self.assertIn("Due in 30 days", body)
+        self.assertIn("Needs a look", body)
+        self.assertNotIn(">Due in 30 days<", body)
         self.assertIn("World Bank — El Salvador", body)
         self.assertIn("GPN · watchlist", body)
         self.assertIn("WHO — Data, analytics", body)
         self.assertIn("Ghana", body)
+        self.assertIn("CDC India — Health Information & Laboratory Systems Strengthening", body)
+        self.assertNotIn("Untitled Proposal", body)
         self.assertNotIn("Positioning Brief", body)
         self.assertNotIn("Palladium — Data.FI Subcontract Concept Note", body)
         low = body.lower()
@@ -62,6 +65,19 @@ class BoardAppTests(unittest.TestCase):
         r = self.client.get("/")
         self.assertIn('id="boardSearch"', r.text)
         self.assertIn("/static/board.js", r.text)
+
+    def test_funded_card_is_not_a_watchlist(self):
+        r = self.client.get("/api/proposals")
+        funded = next(p for p in r.json() if p["status"] == "funded")
+        self.assertFalse(funded["is_watchlist"])
+        board = self.client.get("/").text
+        # GPN watchlist copy stays; funded cards must not use it.
+        self.assertIn("Watch for a notice", board)
+        funded_idx = board.find("Global Fund DHIA")
+        self.assertGreater(funded_idx, 0)
+        snippet = board[funded_idx : funded_idx + 800]
+        self.assertNotIn("Watch for a notice", snippet)
+        self.assertNotIn("No deadline", snippet)
 
 
 if __name__ == "__main__":

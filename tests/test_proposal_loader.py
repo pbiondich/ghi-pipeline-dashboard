@@ -146,6 +146,93 @@ class DeadlineAndGpnTests(unittest.TestCase):
         self.assertEqual([p.name for p in window], ["Due tomorrow"])
         self.assertIn(soon.status, ACTIVE_STATUSES)
 
+    def test_due_window_skips_submitted_and_under_review(self):
+        submitted = Proposal(
+            {
+                "name": "Already sent",
+                "status": "submitted",
+                "deadline": date.today().isoformat(),
+            },
+            "",
+            "s.md",
+            "proposal-s.md",
+        )
+        review = Proposal(
+            {
+                "name": "Waiting on funder",
+                "status": "under_review",
+                "deadline": (date.today() - timedelta(days=40)).isoformat(),
+            },
+            "",
+            "r.md",
+            "proposal-r.md",
+        )
+        self.assertEqual(submitted.deadline_status, "closed")
+        self.assertEqual(review.deadline_status, "closed")
+        self.assertEqual(due_this_window([submitted, review, self.gpn], days=14), [])
+
+    def test_funded_without_deadline_is_not_watchlist(self):
+        funded = self.by_name["Global Fund DHIA — South Africa Digital Health TA"]
+        self.assertEqual(funded.status, "funded")
+        self.assertFalse(funded.is_watchlist)
+
+    def test_forecast_chip_and_year_stamp(self):
+        fogarty = Proposal(
+            {
+                "name": "NIH Fogarty — Reciprocal Innovation",
+                "status": "watching",
+                "deadline": "2027-02-11",
+                "mechanism": "Grant (forecast)",
+                "tags": ["forecast"],
+            },
+            "",
+            "f.md",
+            "proposal-f.md",
+        )
+        self.assertTrue(fogarty.is_forecast)
+        self.assertEqual(fogarty.mechanism_label, "Forecast")
+        self.assertIn("2027", fogarty.deadline_stamp)
+        self.assertNotIn(fogarty, due_this_window([fogarty], days=14))
+
+    def test_name_falls_back_to_heading_when_untitled(self):
+        untitled = Proposal(
+            {"title": "Proposal Cdc India His Lab", "status": "no-go"},
+            "# CDC India — Health Information & Lab Systems (JG-26-0143)\n",
+            "x.md",
+            "proposal-x.md",
+        )
+        self.assertEqual(
+            untitled.name, "CDC India — Health Information & Lab Systems (JG-26-0143)"
+        )
+
+    def test_double_frontmatter_merges_real_record(self):
+        loaded = {p.filename: p for p in load_proposals(str(FIXTURES))}
+        india = loaded["proposal-cdc-india-double-fm.md"]
+        self.assertEqual(
+            india.name, "CDC India — Health Information & Laboratory Systems Strengthening"
+        )
+        self.assertNotEqual(india.name, "Untitled Proposal")
+        self.assertEqual(india.status, "no-go")
+        self.assertEqual(india.region, "India")
+        self.assertEqual(india.grant_id, "CDC-RFA-JG-26-0143")
+        self.assertIn("will not pursue", india.no_go_reason)
+        self.assertEqual(india.amount_compact, "$6M")
+
+    def test_deadline_notes_plural_and_geo_compact(self):
+        p = Proposal(
+            {
+                "name": "EDCTP3 sample",
+                "status": "submitted",
+                "deadline_notes": "02-Sep-2026 at 17:00 Brussels",
+                "geography": "Global (WHO HQ; beneficiary listed Switzerland)",
+            },
+            "",
+            "e.md",
+            "proposal-e.md",
+        )
+        self.assertIn("Brussels", p.deadline_note)
+        self.assertEqual(p.region_compact, "Global")
+
 
 class SurgicalPatchTests(unittest.TestCase):
     def test_patch_preserves_body_and_unrelated_keys(self):
@@ -173,6 +260,29 @@ class SurgicalPatchTests(unittest.TestCase):
         dest.write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
         with self.assertRaises(ValueError):
             update_proposal_status("/tmp", dest.stem, "mystery-lane")
+
+    def test_patch_updates_both_double_frontmatter_blocks(self):
+        src = FIXTURES / "proposal-cdc-india-double-fm.md"
+        dest = Path("/tmp/ghi-patch-india.md")
+        dest.write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
+        updated = update_proposal_status("/tmp", dest.stem, "watching")
+        self.assertEqual(updated.status, "watching")
+        self.assertEqual(
+            updated.name, "CDC India — Health Information & Laboratory Systems Strengthening"
+        )
+        text = dest.read_text(encoding="utf-8")
+        self.assertEqual(text.count("status: watching"), 2)
+        self.assertNotIn("no_go_reason", text)
+        import frontmatter
+        from app.proposal_loader import _absorb_extra_frontmatter
+
+        post = frontmatter.loads(text)
+        meta, body = _absorb_extra_frontmatter(dict(post.metadata), post.content)
+        one = Proposal(meta, body, str(dest), dest.name)
+        self.assertEqual(one.status, "watching")
+        self.assertEqual(
+            one.name, "CDC India — Health Information & Laboratory Systems Strengthening"
+        )
 
     def test_patch_no_go_reason_and_clear_on_move(self):
         src = FIXTURES / "proposal-cdc-ghana.md"

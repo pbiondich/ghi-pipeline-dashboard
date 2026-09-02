@@ -348,6 +348,11 @@ a:hover { color: var(--accent-hover); }
     padding: 18px 8px;
 }
 
+.column-empty {
+    min-width: 148px;
+    max-width: 168px;
+    flex: 0 0 148px;
+}
 .column-empty .column-cards {
     border: 2px dashed var(--border);
     border-radius: var(--radius);
@@ -641,6 +646,11 @@ a.archive-card:hover {
 .deadline-past { color: var(--urgent); font-weight: 700; }
 .deadline-future { color: var(--text-secondary); }
 .deadline-none { color: var(--watching); font-weight: 600; }
+.deadline-closed { color: var(--text-secondary); font-weight: 500; }
+.chip-forecast {
+    background: rgba(61, 79, 143, 0.1);
+    color: var(--watching);
+}
 
 .fit-badge {
     font-size: 10px;
