@@ -67,9 +67,9 @@
                 {% endif %}
             </span>
             {% elif p.is_watchlist %}
-            <span class="meta-item deadline deadline-none" title="{{ p.deadline_note or 'No bid window yet' }}">
+            <span class="meta-item note deadline deadline-none" title="{{ p.deadline_note or 'No bid window yet' }}">
                 {% if p.deadline_note %}
-                {{ p.deadline_note[:42] }}{% if p.deadline_note|length > 42 %}…{% endif %}
+                {{ p.deadline_note }}
                 {% else %}
                 Watch for a notice
                 {% endif %}
@@ -80,9 +80,7 @@
             {% endif %}
         </div>
         {% if p.opportunity %}
-        <div class="card-opportunity" title="{{ p.opportunity }}">
-            {% if p.opportunity|length > 90 %}{{ p.opportunity[:90]|linkify }}…{% else %}{{ p.opportunity|linkify }}{% endif %}
-        </div>
+        <div class="card-opportunity" title="{{ p.opportunity }}">{{ p.opportunity|linkify }}</div>
         {% endif %}
         {% if p.tags %}
         <div class="card-tags">
