@@ -27,15 +27,15 @@
         {% if p.funder or p.region %}
         <div class="card-funder">
             {% if p.funder %}<span>{{ p.funder }}</span>{% endif %}
-            {% if p.funder and p.region %}<span class="sep" aria-hidden="true">·</span>{% endif %}
-            {% if p.region %}<span class="card-geo">{{ p.region }}</span>{% endif %}
+            {% if p.funder and p.region_compact %}<span class="sep" aria-hidden="true">·</span>{% endif %}
+            {% if p.region_compact %}<span class="card-geo">{{ p.region_compact }}</span>{% endif %}
         </div>
         {% endif %}
         <div class="card-chips">
             {% if p.is_watchlist %}
             <span class="chip chip-watchlist">{% if p.is_gpn %}GPN · watchlist{% else %}No deadline{% endif %}</span>
             {% elif p.mechanism_label %}
-            <span class="chip chip-mechanism">{{ p.mechanism_label }}</span>
+            <span class="chip chip-mechanism{% if p.is_forecast %} chip-forecast{% endif %}">{{ p.mechanism_label }}</span>
             {% endif %}
             {% if p.mechanism_label and p.is_watchlist and p.mechanism_label != 'GPN' %}
             <span class="chip chip-mechanism">{{ p.mechanism_label }}</span>
@@ -55,16 +55,18 @@
             {% if p.deadline %}
             <span class="meta-item deadline deadline-{{ p.deadline_status }}">
                 {% if p.deadline_status == 'past' %}
-                Past due · {{ p.deadline.strftime('%b %d') }}
+                Past due · {{ p.deadline_stamp }}
                 {% elif p.deadline_status == 'urgent' %}
-                {{ p.days_until_deadline }}d left · {{ p.deadline.strftime('%b %d') }}
+                {{ p.days_until_deadline }}d left · {{ p.deadline_stamp }}
+                {% elif p.deadline_status == 'closed' %}
+                Deadline {{ p.deadline_stamp }}
                 {% elif p.days_until_deadline == 0 %}
                 Due today
                 {% else %}
-                {{ p.deadline.strftime('%b %d') }}
+                {{ p.deadline_stamp }}
                 {% endif %}
             </span>
-            {% else %}
+            {% elif p.is_watchlist %}
             <span class="meta-item deadline deadline-none" title="{{ p.deadline_note or 'No bid window yet' }}">
                 {% if p.deadline_note %}
                 {{ p.deadline_note[:42] }}{% if p.deadline_note|length > 42 %}…{% endif %}

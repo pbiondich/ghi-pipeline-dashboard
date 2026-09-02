@@ -22,6 +22,7 @@
         event.dataTransfer.effectAllowed = 'move';
         event.dataTransfer.setData('text/plain', draggedCard.dataset.slug);
         draggedCard.classList.add('dragging');
+        document.body.classList.add('is-dragging');
     };
 
     window.onDragOver = function (event) {
@@ -246,6 +247,7 @@
         document.querySelectorAll('.dragging, .drag-over').forEach(function (el) {
             el.classList.remove('dragging', 'drag-over');
         });
+        document.body.classList.remove('is-dragging');
         draggedCard = null;
     });
 

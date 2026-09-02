@@ -61,13 +61,21 @@
                     {{ proposal.deadline.strftime('%B %d, %Y') }}
                     {% if proposal.days_until_deadline is not none %}
                     <span class="deadline-countdown">
-                        ({% if proposal.days_until_deadline < 0 %}{{ -proposal.days_until_deadline }}d past{% elif proposal.days_until_deadline == 0 %}Today{% else %}{{ proposal.days_until_deadline }}d left{% endif %})
+                        {% if proposal.deadline_status == 'closed' %}
+                        (window closed)
+                        {% elif proposal.days_until_deadline < 0 %}
+                        ({{ -proposal.days_until_deadline }}d past)
+                        {% elif proposal.days_until_deadline == 0 %}
+                        (Today)
+                        {% else %}
+                        ({{ proposal.days_until_deadline }}d left)
+                        {% endif %}
                     </span>
                     {% endif %}
                 </span>
                 {% else %}
                 <span class="deadline-none">
-                    {% if proposal.is_gpn %}GPN · no bid window yet{% else %}No deadline{% endif %}
+                    {% if proposal.is_gpn %}GPN · no bid window yet{% elif proposal.is_watchlist %}No deadline{% else %}None on file{% endif %}
                 </span>
                 {% endif %}
                 {% if proposal.deadline_note %}

@@ -39,14 +39,14 @@
     {% endif %}
 
     {% if due_soon %}
-    <section class="due-rail" aria-label="Deadlines in the next 30 days">
+    <section class="due-rail" aria-label="Watching and drafting bids to submit before the deadline">
         <div class="due-rail-inner">
             <div class="due-rail-head">
-                <h2>Due in 30 days</h2>
+                <h2>Submit before the deadline</h2>
                 <p>
-                    {{ due_soon|length }} live bid{{ 's' if due_soon|length != 1 }}
+                    {{ due_soon|length }} watching/drafting
                     {% if due_overdue %} · {{ due_overdue }} overdue{% endif %}
-                    · GPNs without a deadline stay on the board
+                    · submitted and under review stay in their columns
                 </p>
             </div>
             <div class="due-rail-list">
@@ -71,6 +71,7 @@
 
     <p class="filter-status" id="filterStatus" hidden></p>
 
+    <div class="pipeline-scroll">
     <main class="pipeline" id="mainPipeline">
         {% for status in ACTIVE_STATUSES %}
         {% set proposals = groups[status] %}
@@ -91,6 +92,7 @@
         </section>
         {% endfor %}
     </main>
+    </div>
 
     <!-- Archived section (hidden by default). Use class + inline display — not the
          HTML hidden attribute — so Safari reliably shows/hides on toggle. -->
@@ -117,7 +119,7 @@
                         <span class="fit-badge fit-{{ p.fit_rating }}">{{ p.fit_rating }}</span>
                         {% endif %}
                     </div>
-                    <div class="card-funder">{{ p.funder }}{% if p.region %} · {{ p.region }}{% endif %}</div>
+                    <div class="card-funder">{{ p.funder }}{% if p.region_compact %} · {{ p.region_compact }}{% endif %}</div>
                     {% if p.status == 'no-go' and p.no_go_reason %}
                     <div class="card-reason">{{ p.no_go_reason }}</div>
                     {% endif %}
