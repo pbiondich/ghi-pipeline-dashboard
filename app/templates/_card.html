@@ -1,53 +1,93 @@
-<a href="/proposal/{{ p.url_slug }}" class="card" draggable="true"
-   data-slug="{{ p.url_slug }}" data-status="{{ p.status }}"
-   data-fit="{{ p.fit_rating }}" data-deadline="{{ p.deadline_status }}"
-   ondragstart="onDragStart(event)">
-    <div class="card-archive-area">
-        <button class="card-archive-btn" title="Archive this proposal">⋯</button>
-        <div class="archive-menu">
-            <div class="archive-menu-item" data-status="no-go">🚫 No-go</div>
+<article class="card{% if p.deadline_status == 'urgent' or p.deadline_status == 'past' %} card-urgent{% elif p.deadline_status == 'soon' %} card-soon{% elif p.is_watchlist %} card-watchlist{% endif %}"
+        draggable="true"
+        data-slug="{{ p.url_slug }}"
+        data-status="{{ p.status }}"
+        data-fit="{{ p.fit_rating }}"
+        data-deadline="{{ p.deadline_status }}"
+        data-watchlist="{{ '1' if p.is_watchlist else '0' }}"
+        data-gpn="{{ '1' if p.is_gpn else '0' }}"
+        data-search="{{ p.search_text }}"
+        ondragstart="onDragStart(event)">
+    <div class="card-toolbar">
+        <button type="button" class="card-archive-btn" aria-haspopup="menu" aria-expanded="false" aria-label="Close {{ p.name }}">⋯</button>
+        <div class="archive-menu" role="menu" hidden>
+            <button type="button" class="archive-menu-item" role="menuitem" data-status="no-go">No-go</button>
             {% if p.status in ('submitted', 'under_review', 'approved') %}
-            <div class="archive-menu-item" data-status="rejected">❌ Not funded</div>
+            <button type="button" class="archive-menu-item" role="menuitem" data-status="rejected">Not funded</button>
             {% endif %}
         </div>
     </div>
-    <div class="card-header">
-        <h3 class="card-title">{{ p.name }}</h3>
-        {% if p.fit_rating %}
-        <span class="fit-badge fit-{{ p.fit_rating }}">{{ p.fit_rating }}</span>
-        {% endif %}
-    </div>
-    <div class="card-funder">{{ p.funder }}</div>
-    {% if p.url %}
-    <span class="card-url-icon" title="Open opportunity link"
-          role="link" tabindex="0"
-          data-url="{{ p.url }}"
-          onclick="event.preventDefault(); event.stopPropagation(); window.open(this.dataset.url, '_blank', 'noopener,noreferrer')"
-          onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); event.stopPropagation(); window.open(this.dataset.url, '_blank', 'noopener,noreferrer')}">🔗</span>
-    {% endif %}
-    {% if p.no_go_reason %}
-    <div class="card-reason">{{ p.no_go_reason|linkify }}</div>
-    {% endif %}
-    <div class="card-meta">
-        {% if p.deadline %}
-        <span class="meta-item deadline deadline-{{ p.deadline_status }}">
-            {% if p.deadline_status == 'past' %}
-            ⏰ Past due
-            {% elif p.deadline_status == 'urgent' %}
-            ⏰ {{ p.days_until_deadline }}d left
-            {% else %}
-            📅 {{ p.deadline.strftime('%b %d') }}
+    <a href="/proposal/{{ p.url_slug }}" class="card-body">
+        <div class="card-header">
+            <h3 class="card-title">{{ p.name }}</h3>
+            {% if p.fit_rating %}
+            <span class="fit-badge fit-{{ p.fit_rating }}">{{ p.fit_rating }}</span>
             {% endif %}
-        </span>
+        </div>
+        {% if p.funder or p.region %}
+        <div class="card-funder">
+            {% if p.funder %}<span>{{ p.funder }}</span>{% endif %}
+            {% if p.funder and p.region %}<span class="sep" aria-hidden="true">·</span>{% endif %}
+            {% if p.region %}<span class="card-geo">{{ p.region }}</span>{% endif %}
+        </div>
         {% endif %}
-        <span class="meta-item amount">{{ p.amount_display }}</span>
-    </div>
-    {% if p.region %}
-    <div class="card-region">{{ p.region }}</div>
-    {% endif %}
-    {% if p.opportunity and p.opportunity|length > 80 %}
-    <div class="card-opportunity" title="{{ p.opportunity }}">{{ p.opportunity[:80]|linkify }}…</div>
-    {% elif p.opportunity %}
-    <div class="card-opportunity">{{ p.opportunity|linkify }}</div>
-    {% endif %}
-</a>
+        <div class="card-chips">
+            {% if p.is_watchlist %}
+            <span class="chip chip-watchlist">{% if p.is_gpn %}GPN · watchlist{% else %}No deadline{% endif %}</span>
+            {% elif p.mechanism_label %}
+            <span class="chip chip-mechanism">{{ p.mechanism_label }}</span>
+            {% endif %}
+            {% if p.mechanism_label and p.is_watchlist and p.mechanism_label != 'GPN' %}
+            <span class="chip chip-mechanism">{{ p.mechanism_label }}</span>
+            {% endif %}
+            {% if p.url %}
+            <span class="card-url-icon" title="Open opportunity link"
+                  role="link" tabindex="0"
+                  data-url="{{ p.url }}"
+                  onclick="event.preventDefault(); event.stopPropagation(); window.open(this.dataset.url, '_blank', 'noopener,noreferrer')"
+                  onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); event.stopPropagation(); window.open(this.dataset.url, '_blank', 'noopener,noreferrer')}">Link</span>
+            {% endif %}
+        </div>
+        {% if p.no_go_reason %}
+        <div class="card-reason">{{ p.no_go_reason|linkify }}</div>
+        {% endif %}
+        <div class="card-meta">
+            {% if p.deadline %}
+            <span class="meta-item deadline deadline-{{ p.deadline_status }}">
+                {% if p.deadline_status == 'past' %}
+                Past due · {{ p.deadline.strftime('%b %d') }}
+                {% elif p.deadline_status == 'urgent' %}
+                {{ p.days_until_deadline }}d left · {{ p.deadline.strftime('%b %d') }}
+                {% elif p.days_until_deadline == 0 %}
+                Due today
+                {% else %}
+                {{ p.deadline.strftime('%b %d') }}
+                {% endif %}
+            </span>
+            {% else %}
+            <span class="meta-item deadline deadline-none" title="{{ p.deadline_note or 'No bid window yet' }}">
+                {% if p.deadline_note %}
+                {{ p.deadline_note[:42] }}{% if p.deadline_note|length > 42 %}…{% endif %}
+                {% else %}
+                Watch for a notice
+                {% endif %}
+            </span>
+            {% endif %}
+            {% if p.amount_compact %}
+            <span class="meta-item amount" title="{{ p.amount_display }}">{{ p.amount_compact }}</span>
+            {% endif %}
+        </div>
+        {% if p.opportunity %}
+        <div class="card-opportunity" title="{{ p.opportunity }}">
+            {% if p.opportunity|length > 90 %}{{ p.opportunity[:90]|linkify }}…{% else %}{{ p.opportunity|linkify }}{% endif %}
+        </div>
+        {% endif %}
+        {% if p.tags %}
+        <div class="card-tags">
+            {% for tag in p.tags[:3] %}
+            <span class="tag">{{ tag }}</span>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </a>
+</article>

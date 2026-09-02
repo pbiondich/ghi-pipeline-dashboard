@@ -1,10 +1,14 @@
 """
 Load and parse GHI proposal markdown files from the brain.
+
+The vault (pbiondich/brain proposals/) is the source of truth. This module
+is a derived view: it reads frontmatter and can surgically PATCH status back
+without rewriting the rest of the file.
 """
 
 import re
-import os
 import logging
+from dataclasses import dataclass, field
 from datetime import datetime, date
 from pathlib import Path
 from typing import Optional
@@ -13,7 +17,8 @@ import frontmatter
 
 logger = logging.getLogger(__name__)
 
-# Pipeline status order (MUST match Grant's canonical ordering)
+# Pipeline status order. Canonical spellings match the vault + this dashboard.
+# Aliases (hyphen/underscore, closed, withdrawn, under-review) normalize here.
 # no-go = team decided not to pursue; rejected = funder declined / not funded.
 # Both are terminal "closed" states hidden from the default board (Show closed).
 STATUS_ORDER = [
@@ -27,7 +32,7 @@ STATUS_ORDER = [
     "rejected",
 ]
 
-# Active statuses on the main board. Closed (no-go + rejected) live in archive.
+# Active statuses on the main board. Closed states live in archive.
 ACTIVE_STATUSES = ["watching", "drafting", "submitted", "under_review", "approved", "funded"]
 
 # Terminal statuses shown only when "Show closed" is toggled on.
@@ -55,26 +60,74 @@ STATUS_EMOJI = {
     "rejected": "❌",
 }
 
+# Vault and operator aliases → canonical STATUS_ORDER value.
+# Do not invent new column names; map mixed spellings onto the existing board.
+_STATUS_ALIASES = {
+    "no_go": "no-go",
+    "nogo": "no-go",
+    "not_funded": "rejected",
+    "notfunded": "rejected",
+    "declined": "rejected",
+    "unsuccessful": "rejected",
+    "closed": "no-go",  # team closed without funder decision → no-go
+    "archive": "no-go",
+    "archived": "no-go",
+    "withdrawn": "no-go",
+    "withdraw": "no-go",
+    "under_review": "under_review",
+    "under-review": "under_review",
+    "underreview": "under_review",
+}
+
+_NON_PROPOSAL_TYPES = {"draft", "brief", "reference", "note"}
+_NON_PROPOSAL_PREFIXES = ("brief-", "draft-")
+
+_FRONTMATTER_RE = re.compile(r"\A---\r?\n(.*?)\r?\n---", re.DOTALL)
+
+
+@dataclass
+class LoadReport:
+    """Result of scanning the proposals directory."""
+
+    proposals: list = field(default_factory=list)
+    errors: list = field(default_factory=list)
+    missing_dir: bool = False
+    skipped: int = 0
+
 
 class Proposal:
     def __init__(self, metadata: dict, content: str, file_path: str, filename: str):
         self.file_path = file_path
         self.filename = filename
+        self.raw_status = metadata.get("status", "")
         self.slug = metadata.get("slug", filename.replace(".md", ""))
         self.name = metadata.get("name", "Untitled Proposal")
         self.status = self._normalize_status(metadata.get("status", "watching"))
-        self.funder = metadata.get("funder", "") or metadata.get("target", "")
+        self.funder = self._resolve_funder(metadata, self.name)
         self.opportunity = metadata.get("opportunity", "")
-        self.grant_id = metadata.get("grant_id", "")
-        self.region = metadata.get("region", "")
-        self.mechanism = metadata.get("mechanism", "")
+        self.grant_id = (
+            metadata.get("grant_id", "")
+            or metadata.get("reference", "")
+            or ""
+        )
+        self.region = (
+            metadata.get("geography", "")
+            or metadata.get("region", "")
+            or ""
+        )
+        self.mechanism = metadata.get("mechanism", "") or ""
         self.url = metadata.get("url", "")
-        self.fit_rating = self._normalize_fit(metadata.get("fit_rating", ""))
+        self.fit_rating = self._normalize_fit(
+            metadata.get("fit_rating") or metadata.get("fit") or ""
+        )
         self.tags = metadata.get("tags", []) or []
         self.deadline = self._parse_deadline(metadata.get("deadline"))
-        self.deadline_note = metadata.get("deadline_note", "")
+        self.deadline_note = metadata.get("deadline_note", "") or ""
         self.amount_raw = metadata.get("amount")
-        self.amount_display = self._format_amount(metadata.get("amount"), metadata.get("amount_description", ""))
+        self.amount_display = self._format_amount(
+            metadata.get("amount"), metadata.get("amount_description", "")
+        )
+        self.amount_compact = self._compact_amount(self.amount_display, metadata.get("amount"))
         self.amount_value = self._parse_amount_value(metadata.get("amount"))
         self.created = self._parse_date(metadata.get("created"))
         self.updated = self._parse_date(metadata.get("updated"))
@@ -85,26 +138,18 @@ class Proposal:
         self.no_go_reason = metadata.get("no_go_reason", "")
 
     @staticmethod
-    def _normalize_status(status) -> str:
+    def _status_key(status) -> str:
+        raw = str(status).strip().lower()
+        return raw.replace(" ", "_").replace("-", "_")
+
+    @classmethod
+    def _normalize_status(cls, status) -> str:
         if not status:
             return "watching"
         raw = str(status).strip().lower()
-        # Collapse spaces/hyphens/underscores for alias lookup
-        key = raw.replace(" ", "_").replace("-", "_")
-        aliases = {
-            "no_go": "no-go",
-            "nogo": "no-go",
-            "not_funded": "rejected",
-            "notfunded": "rejected",
-            "declined": "rejected",
-            "unsuccessful": "rejected",
-            "closed": "no-go",  # team closed without funder decision → no-go
-            "archive": "no-go",
-            "archived": "no-go",
-            "under_review": "under_review",
-        }
-        if key in aliases:
-            return aliases[key]
+        key = cls._status_key(raw)
+        if key in _STATUS_ALIASES:
+            return _STATUS_ALIASES[key]
         if raw in STATUS_ORDER:
             return raw
         if key in STATUS_ORDER:
@@ -114,13 +159,43 @@ class Proposal:
                 return candidate
         return "watching"
 
+    @classmethod
+    def canonicalize_status(cls, status: str) -> str:
+        """Public alias of _normalize_status for PATCH validation."""
+        return cls._normalize_status(status)
+
     @staticmethod
     def _normalize_fit(rating) -> str:
         if not rating:
             return ""
         r = str(rating).strip().lower()
+        aliases = {
+            "strong": "high",
+            "good": "high",
+            "excellent": "high",
+            "moderate": "medium",
+            "mid": "medium",
+            "poor": "low",
+            "weak": "weak",
+        }
+        if r in aliases:
+            return aliases[r]
         if r in ("high", "medium", "low", "weak"):
             return r
+        return ""
+
+    @staticmethod
+    def _resolve_funder(metadata: dict, name: str) -> str:
+        funder = metadata.get("funder", "") or metadata.get("target", "") or ""
+        if funder:
+            return str(funder)
+        # Derived display only — do not write back. Many vault cards put the
+        # funder in the title ("AWS — OCL Modernization") with no funder field.
+        for sep in (" — ", " – ", " - "):
+            if sep in name:
+                prefix = name.split(sep, 1)[0].strip()
+                if 1 < len(prefix) <= 48:
+                    return prefix
         return ""
 
     @staticmethod
@@ -128,6 +203,8 @@ class Proposal:
         if not val:
             return None
         try:
+            if isinstance(val, datetime):
+                return val.date()
             if isinstance(val, date):
                 return val
             return datetime.strptime(str(val)[:10], "%Y-%m-%d").date()
@@ -139,6 +216,8 @@ class Proposal:
         if not val:
             return None
         try:
+            if isinstance(val, datetime):
+                return val.date()
             if isinstance(val, date):
                 return val
             return datetime.strptime(str(val)[:10], "%Y-%m-%d").date()
@@ -148,8 +227,8 @@ class Proposal:
     def _format_amount(self, amount, description: str = "") -> str:
         if description:
             return description
-        if amount is None:
-            return "TBD"
+        if amount is None or amount == "":
+            return ""
         if isinstance(amount, (int, float)):
             if amount >= 1_000_000:
                 return f"${amount / 1_000_000:.1f}M"
@@ -158,6 +237,53 @@ class Proposal:
             return f"${amount:,.0f}"
         return str(amount)
 
+    @staticmethod
+    def _human_money(val: float) -> str:
+        """Format a USD magnitude without scientific notation."""
+        abs_val = abs(val)
+        if abs_val >= 1_000_000_000:
+            n = val / 1_000_000_000
+            suffix = "B"
+        elif abs_val >= 1_000_000:
+            n = val / 1_000_000
+            suffix = "M"
+        elif abs_val >= 1_000:
+            n = val / 1_000
+            suffix = "K"
+        else:
+            return f"${val:,.0f}" if abs_val >= 1 else f"${val:g}"
+        if abs(n) >= 10:
+            return f"${n:.0f}{suffix}"
+        text = f"{n:.1f}".rstrip("0").rstrip(".")
+        return f"${text}{suffix}"
+
+    def _compact_amount(self, display: str, amount) -> str:
+        """Short card label. Long program-funding strings stay readable."""
+        if not display:
+            return ""
+        if isinstance(amount, (int, float)):
+            return self._human_money(float(amount))
+        if len(display) <= 22:
+            return display
+        match = re.search(r"([\d,]+(?:\.\d+)?)", display)
+        if not match:
+            return display[:20].rstrip() + "…"
+        raw = match.group(1)
+        try:
+            val = float(raw.replace(",", ""))
+        except ValueError:
+            return display[:20].rstrip() + "…"
+        low = display.lower()
+        # Bare "125M" / "120 million" are already in those units.
+        if "," not in raw:
+            if re.search(r"\bbillion\b|\b[\d.]+\s*b\b", low):
+                val *= 1_000_000_000
+            elif re.search(r"\bmillion\b|\b[\d.]+\s*m\b", low):
+                val *= 1_000_000
+            elif re.search(r"\bthousand\b|\b[\d.]+\s*k\b", low):
+                val *= 1_000
+        return self._human_money(val)
+
     def _parse_amount_value(self, amount) -> Optional[float]:
         """Extract a numeric value for sorting. Returns the max value if range."""
         if amount is None:
@@ -165,10 +291,14 @@ class Proposal:
         if isinstance(amount, (int, float)):
             return float(amount)
         s = str(amount)
-        # Try to extract numbers like "150-200k" or "$150,000"
         nums = re.findall(r"[\d,.]+", s.replace(",", ""))
         if nums:
-            vals = [float(n) for n in nums if n]
+            vals = []
+            for n in nums:
+                try:
+                    vals.append(float(n))
+                except ValueError:
+                    continue
             return max(vals) if vals else None
         return None
 
@@ -191,15 +321,14 @@ class Proposal:
     def days_until_deadline(self) -> Optional[int]:
         if not self.deadline:
             return None
-        delta = (self.deadline - date.today()).days
-        return delta
+        return (self.deadline - date.today()).days
 
     @property
     def deadline_status(self) -> str:
-        """Returns 'urgent', 'soon', 'future', or ''"""
+        """Returns 'urgent', 'soon', 'future', 'past', or 'none'."""
         days = self.days_until_deadline
         if days is None:
-            return ""
+            return "none"
         if days < 0:
             return "past"
         if days <= 7:
@@ -207,6 +336,61 @@ class Proposal:
         if days <= 30:
             return "soon"
         return "future"
+
+    @property
+    def is_gpn(self) -> bool:
+        hay = " ".join(
+            [
+                str(self.mechanism or ""),
+                str(self.name or ""),
+                str(self.opportunity or ""),
+                " ".join(str(t) for t in self.tags),
+            ]
+        ).lower()
+        return "gpn" in hay or "general procurement" in hay
+
+    @property
+    def is_watchlist(self) -> bool:
+        """No bid window yet (typical GPN) — still a first-class card."""
+        return self.deadline is None
+
+    @property
+    def mechanism_label(self) -> str:
+        if not self.mechanism:
+            return "GPN" if self.is_gpn else ""
+        m = self.mechanism.strip()
+        # Prefer a short operator chip over the full vault sentence.
+        low = m.lower()
+        if "gpn" in low or "general procurement" in low:
+            return "GPN"
+        if "nofo" in low:
+            return "NOFO"
+        if "lta" in low:
+            return "LTA"
+        if "aps" in low:
+            return "APS"
+        if "reoi" in low:
+            return "REOI"
+        if "rfp" in low:
+            return "RFP"
+        if "rfq" in low:
+            return "RFQ"
+        if len(m) > 28:
+            return m[:26].rstrip() + "…"
+        return m
+
+    @property
+    def search_text(self) -> str:
+        parts = [
+            self.name,
+            self.funder,
+            self.region,
+            self.mechanism,
+            self.grant_id,
+            self.opportunity,
+            " ".join(str(t) for t in self.tags),
+        ]
+        return " ".join(p for p in parts if p).lower()
 
     @property
     def status_index(self) -> int:
@@ -228,13 +412,17 @@ class Proposal:
             "grant_id": self.grant_id,
             "region": self.region,
             "mechanism": self.mechanism,
+            "mechanism_label": self.mechanism_label,
             "fit_rating": self.fit_rating,
             "tags": self.tags,
             "deadline": self.deadline.isoformat() if self.deadline else None,
             "deadline_note": self.deadline_note,
             "days_until_deadline": self.days_until_deadline,
             "deadline_status": self.deadline_status,
+            "is_watchlist": self.is_watchlist,
+            "is_gpn": self.is_gpn,
             "amount_display": self.amount_display,
+            "amount_compact": self.amount_compact,
             "amount_value": self.amount_value,
             "created": self.created.isoformat() if self.created else None,
             "updated": self.updated.isoformat() if self.updated else None,
@@ -247,34 +435,54 @@ class Proposal:
         }
 
 
-def load_proposals(proposals_dir: str) -> list[Proposal]:
-    """Load all proposal markdown files from the directory."""
-    proposals = []
+def _is_board_proposal(fpath: Path, post: frontmatter.Post) -> bool:
+    """Non-proposal vault files (brief-*, draft-*, type: brief/draft) stay off the board."""
+    name = fpath.name.lower()
+    if name.startswith(_NON_PROPOSAL_PREFIXES):
+        return False
+    post_type = str(post.get("type", "")).strip().lower()
+    if post_type in _NON_PROPOSAL_TYPES:
+        return False
+    # Filename convention is the vault's board-of-record marker.
+    if not name.startswith("proposal-"):
+        return False
+    return True
+
+
+def load_proposals_report(proposals_dir: str) -> LoadReport:
+    """Load proposal markdown files and report skip/error/missing-dir state."""
+    report = LoadReport()
     path = Path(proposals_dir)
 
     if not path.exists():
         logger.warning("Proposals directory not found: %s", proposals_dir)
-        return proposals
+        report.missing_dir = True
+        return report
 
-    for fpath in sorted(path.glob("proposal-*.md")):
+    for fpath in sorted(path.glob("*.md")):
         try:
-            with open(fpath, "r") as f:
+            with open(fpath, "r", encoding="utf-8") as f:
                 post = frontmatter.load(f)
 
-            # Skip draft files
-            post_type = str(post.get("type", "")).strip().lower()
-            if post_type == "draft":
+            if not _is_board_proposal(fpath, post):
+                report.skipped += 1
                 continue
 
             proposal = Proposal(post.metadata, post.content, str(fpath), fpath.name)
-            proposals.append(proposal)
+            report.proposals.append(proposal)
         except Exception as e:
             logger.error("Error loading %s: %s", fpath.name, e)
+            report.errors.append(f"{fpath.name}: {e}")
 
-    return proposals
+    return report
 
 
-def get_proposal_by_slug(proposals: list[Proposal], slug: str) -> Optional[Proposal]:
+def load_proposals(proposals_dir: str) -> list:
+    """Load all proposal markdown files from the directory."""
+    return load_proposals_report(proposals_dir).proposals
+
+
+def get_proposal_by_slug(proposals: list, slug: str) -> Optional[Proposal]:
     """Find a proposal by its slug. Handles both bare slugs and prefixed forms."""
     for p in proposals:
         stored = p.slug
@@ -284,71 +492,132 @@ def get_proposal_by_slug(proposals: list[Proposal], slug: str) -> Optional[Propo
     return None
 
 
-def update_proposal_status(proposals_dir: str, slug: str, new_status: str, reason: str = "") -> Proposal:
+def _find_proposal_file(proposals_dir: Path, slug: str) -> Optional[Path]:
+    filepath = proposals_dir / f"{slug}.md"
+    if filepath.exists():
+        return filepath
+    filepath = proposals_dir / f"proposal-{slug}.md"
+    if filepath.exists():
+        return filepath
+    for f in proposals_dir.glob("proposal-*.md"):
+        try:
+            with open(f, encoding="utf-8") as fh:
+                post = frontmatter.load(fh)
+            stored = str(post.get("slug", ""))
+            if stored == slug or stored.endswith("/" + slug) or f.name.replace(".md", "") == slug:
+                return f
+        except Exception:
+            continue
+    return None
+
+
+def _set_yaml_scalar(block: str, key: str, value: str) -> str:
+    """Set or insert a simple YAML scalar without rewriting the rest of the block."""
+    pattern = re.compile(rf"^({re.escape(key)}\s*:\s*).*$", re.MULTILINE)
+    if pattern.search(block):
+        return pattern.sub(lambda m: m.group(1) + value, block, count=1)
+    if block and not block.endswith("\n"):
+        block += "\n"
+    return block + f"{key}: {value}\n"
+
+
+def _remove_yaml_key(block: str, key: str) -> str:
+    pattern = re.compile(rf"^{re.escape(key)}\s*:.*(?:\n|$)", re.MULTILINE)
+    return pattern.sub("", block, count=1)
+
+
+def _surgical_status_patch(text: str, new_status: str, reason: str, today: str) -> str:
+    """Patch status/updated/no_go_reason inside the opening frontmatter block only."""
+    match = _FRONTMATTER_RE.search(text)
+    if not match:
+        raise RuntimeError("Proposal file has no YAML frontmatter block")
+
+    block = match.group(1)
+    block = _set_yaml_scalar(block, "status", new_status)
+    block = _set_yaml_scalar(block, "updated", today)
+    if new_status == "no-go" and reason:
+        # Quote if the reason would break YAML (colon, leading special).
+        safe = reason.replace("\n", " ").strip()
+        if any(c in safe for c in (":", "#", "{", "}", "[", "]", ",", "&", "*", "!", "|", ">", "'", '"')):
+            dumped = safe.replace("'", "''")
+            safe = f"'{dumped}'"
+        block = _set_yaml_scalar(block, "no_go_reason", safe)
+    elif new_status != "no-go":
+        block = _remove_yaml_key(block, "no_go_reason")
+
+    start, end = match.span(1)
+    return text[:start] + block + text[end:]
+
+
+def update_proposal_status(
+    proposals_dir: str, slug: str, new_status: str, reason: str = ""
+) -> Proposal:
     """Update the status frontmatter field in a proposal markdown file.
-    
+
     Optionally saves a no_go_reason to frontmatter when status is 'no-go'.
-    Returns the updated Proposal object. Raises ValueError on invalid status.
+    Writes only status / updated / no_go_reason so vault key order and
+    quoting are preserved. Returns the updated Proposal object.
     """
-    if new_status not in STATUS_ORDER:
+    canonical = Proposal.canonicalize_status(new_status)
+    # Reject values that collapse to watching only because they were unknown.
+    if canonical not in STATUS_ORDER:
         valid = ", ".join(STATUS_ORDER)
         raise ValueError(f"Invalid status '{new_status}'. Must be one of: {valid}")
-    
-    # Find the file by slug
-    proposals_dir = Path(proposals_dir)
-    # Try direct filename
-    filepath = proposals_dir / f"{slug}.md"
-    if not filepath.exists():
-        # Try with proposal- prefix
-        filepath = proposals_dir / f"proposal-{slug}.md"
-    if not filepath.exists():
-        # Try finding by slug match in all proposal files
-        for f in proposals_dir.glob("proposal-*.md"):
-            try:
-                with open(f) as fh:
-                    post = frontmatter.load(fh)
-                stored = str(post.get("slug", ""))
-                if stored == slug or stored.endswith("/" + slug) or f.name.replace(".md", "") == slug:
-                    filepath = f
-                    break
-            except Exception:
-                continue
-    
-    if not filepath.exists():
-        raise FileNotFoundError(f"No proposal found for slug: {slug}")
-    
-    # Read, modify, write
-    try:
-        with open(filepath) as f:
-            post = frontmatter.load(f)
-        
-        post.metadata["status"] = new_status
-        post.metadata["updated"] = date.today().isoformat()
+    if Proposal._status_key(new_status) not in _STATUS_ALIASES and canonical == "watching":
+        raw = str(new_status).strip().lower()
+        if raw not in ("watching", "") and Proposal._status_key(raw) != "watching":
+            valid = ", ".join(STATUS_ORDER)
+            raise ValueError(f"Invalid status '{new_status}'. Must be one of: {valid}")
 
-        # Save reason when set to no-go
-        if new_status == "no-go" and reason:
-            # Store in frontmatter; clear if switching away from no-go
-            post.metadata["no_go_reason"] = reason
-        elif new_status != "no-go":
-            # Clear the reason when moving out of no-go
-            post.metadata.pop("no_go_reason", None)
-        
-        content = frontmatter.dumps(post)
-        with open(filepath, "w") as f:
-            f.write(content)
+    proposals_dir = Path(proposals_dir)
+    filepath = _find_proposal_file(proposals_dir, slug)
+    if not filepath:
+        raise FileNotFoundError(f"No proposal found for slug: {slug}")
+
+    try:
+        original = filepath.read_text(encoding="utf-8")
+        patched = _surgical_status_patch(
+            original, canonical, reason, date.today().isoformat()
+        )
+        filepath.write_text(patched, encoding="utf-8")
+    except RuntimeError:
+        raise
     except Exception as e:
-        raise RuntimeError(f"Failed to update proposal {filepath.name}: {e}")
-    
-    # Return updated Proposal object
+        raise RuntimeError(f"Failed to update proposal {filepath.name}: {e}") from e
+
+    with open(filepath, encoding="utf-8") as f:
+        post = frontmatter.load(f)
     return Proposal(post.metadata, post.content, str(filepath), filepath.name)
 
 
-def group_by_status(proposals: list[Proposal]) -> dict:
-    """Group proposals by status in pipeline order."""
-    groups = {}
-    for status in STATUS_ORDER:
-        groups[status] = []
+def due_this_window(proposals: list, days: int = 30) -> list:
+    """Active live bids that are overdue or due within `days`. No-deadline cards excluded."""
+    due = []
+    for p in proposals:
+        if p.status not in ACTIVE_STATUSES:
+            continue
+        if p.days_until_deadline is None:
+            continue
+        if p.days_until_deadline <= days:
+            due.append(p)
+    due.sort(key=lambda p: (p.days_until_deadline, p.name.lower()))
+    return due
+
+
+def _column_sort_key(p: Proposal):
+    # Dated cards first (overdue → soonest → later). Watchlist / no-deadline last.
+    if p.deadline is None:
+        return (1, 10**9, (p.name or "").lower())
+    days = p.days_until_deadline if p.days_until_deadline is not None else 10**9
+    return (0, days, (p.name or "").lower())
+
+
+def group_by_status(proposals: list) -> dict:
+    """Group proposals by status in pipeline order, deadline-sorted within a column."""
+    groups = {status: [] for status in STATUS_ORDER}
     for p in proposals:
         if p.status in groups:
             groups[p.status].append(p)
+    for status in groups:
+        groups[status].sort(key=_column_sort_key)
     return groups
