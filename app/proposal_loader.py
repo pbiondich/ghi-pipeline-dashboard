@@ -709,11 +709,12 @@ def update_proposal_status(
 
 
 def due_this_window(proposals: list, days: int = 30) -> list:
-    """Watching/drafting bids that are overdue or due within `days`.
+    """Watching/drafting bids that still need to go out within `days`.
 
-    Submitted / under-review / funded dates are not action items. Forecasts
-    beyond the window stay in their column. GPNs with no deadline are excluded
-    from this rail (they remain on the board).
+    The rail exists to get open packets submitted before the deadline.
+    Submitted / under-review / funded / approved dates are not action items.
+    Forecasts beyond the window stay in their column. GPNs with no deadline
+    are excluded (they remain on the board).
     """
     due = []
     for p in proposals:

@@ -39,14 +39,14 @@
     {% endif %}
 
     {% if due_soon %}
-    <section class="due-rail" aria-label="Open bids that need a look">
+    <section class="due-rail" aria-label="Watching and drafting bids to submit before the deadline">
         <div class="due-rail-inner">
             <div class="due-rail-head">
-                <h2>Needs a look</h2>
+                <h2>Submit before the deadline</h2>
                 <p>
                     {{ due_soon|length }} watching/drafting
                     {% if due_overdue %} · {{ due_overdue }} overdue{% endif %}
-                    · overdue or due in 30 days
+                    · submitted and under review stay in their columns
                 </p>
             </div>
             <div class="due-rail-list">

@@ -25,8 +25,9 @@ class BoardAppTests(unittest.TestCase):
         self.assertEqual(r.status_code, 200)
         body = r.text
         self.assertIn("Win pipeline", body)
-        self.assertIn("Needs a look", body)
+        self.assertIn("Submit before the deadline", body)
         self.assertNotIn(">Due in 30 days<", body)
+        self.assertNotIn("Needs a look", body)
         self.assertIn("World Bank — El Salvador", body)
         self.assertIn("GPN · watchlist", body)
         self.assertIn("WHO — Data, analytics", body)
@@ -37,7 +38,7 @@ class BoardAppTests(unittest.TestCase):
         self.assertIn("2027", body)
         self.assertIn("CSA", body)
         rail = body.split('id="mainPipeline"', 1)[0]
-        self.assertIn("Needs a look", rail)
+        self.assertIn("Submit before the deadline", rail)
         self.assertNotIn("EDCTP3", rail)
         self.assertNotIn("Positioning Brief", body)
         self.assertNotIn("Palladium — Data.FI Subcontract Concept Note", body)
