@@ -34,7 +34,8 @@
     </div>
     {% elif load_errors %}
     <div class="banner banner-warn" role="status">
-        {{ load_errors|length }} file{{ 's' if load_errors|length != 1 }} failed to parse and {{ 'were' if load_errors|length != 1 else 'was' }} skipped.
+        {{ load_errors|length }} file{{ 's' if load_errors|length != 1 }} failed to parse and {{ 'were' if load_errors|length != 1 else 'was' }} skipped:
+        {{ load_errors|join(', ') }}.
     </div>
     {% endif %}
 

@@ -13,6 +13,7 @@ from pathlib import Path
 
 import markdown as md_lib
 from markupsafe import Markup
+from pydantic import BaseModel, Field
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
@@ -215,7 +216,12 @@ async def api_proposals():
     return [p.to_dict() for p in proposals]
 
 
-@app.get("/api/proposals/{slug}")
+class StatusPatch(BaseModel):
+    status: str
+    reason: str = Field(default="")
+
+
+@app.get("/api/proposals/{slug:path}")
 async def api_proposal_detail(slug: str):
     proposals = _get_proposals()
     p = get_proposal_by_slug(proposals, slug)
@@ -224,18 +230,15 @@ async def api_proposal_detail(slug: str):
     return p.to_dict()
 
 
-@app.patch("/api/proposals/{slug}")
-async def api_update_proposal(slug: str, body: dict):
+@app.patch("/api/proposals/{slug:path}")
+async def api_update_proposal(slug: str, body: StatusPatch):
     """Update a proposal field (e.g., status) and write back to the brain file."""
-    if not isinstance(body, dict) or "status" not in body:
-        raise HTTPException(status_code=400, detail="Request body must include 'status' field")
-
-    reason = body.get("reason", "") or ""
+    reason = body.reason or ""
 
     try:
         # Loader canonicalizes hyphen/underscore aliases and rejects unknowns
         # so a bad status is never silently rewritten to watching.
-        updated = update_proposal_status(PROPOSALS_DIR, slug, body["status"], reason)
+        updated = update_proposal_status(PROPOSALS_DIR, slug, body.status, reason)
         new_status = updated.status
         threading.Thread(
             target=_git_commit_push,
